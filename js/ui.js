@@ -557,25 +557,30 @@ function getNextActionForAttr(attrId) {
 function computeBossPA(attrId) {
   let total = 0;
   const yr = new Date().getFullYear();
+  const bossData = S.boss();
   getBosses().forEach(boss => {
     if (boss.a !== attrId) return;
-    const bd = S.boss()[`w${boss.week}_${yr}`];
-    if (bd && bd.declared === 'won') total += BOSS_PA_BY_DIFF[boss.d]||60;
+    // Vérifie toutes les années possibles
+    for (let y = yr - 1; y <= yr; y++) {
+      const bd = bossData[`w${boss.week}_${y}`];
+      if (bd && bd.declared === 'won') { total += BOSS_PA_BY_DIFF[boss.d] || 60; }
+    }
   });
   return total;
 }
 
 function computeQuestPAForAttr(attrId) {
   let total = 0;
-  for (let i=0; i<localStorage.length; i++) {
-    const k=localStorage.key(i);
-    if (!k||!k.match(/^qw\d+_\d+__/)) continue;
+  const quests = getQuests();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.match(/^qw\d+_\d+__/)) continue;
     try {
-      const v=JSON.parse(localStorage.getItem(k));
-      if (!v||v.state!=='done') continue;
-      const qname=k.split('__').slice(1).join('__');
-      const quest=getQuests().find(q=>q.n===qname);
-      if (quest && quest.a===attrId) total += QUEST_PA_BY_DIFF[quest.diff]||30;
+      const v = JSON.parse(localStorage.getItem(k));
+      if (!v || v.state !== 'done') continue;
+      const qname = k.split('__').slice(1).join('__');
+      const quest = quests.find(q => q.n === qname);
+      if (quest && quest.a === attrId) total += QUEST_PA_BY_DIFF[quest.diff] || 30;
     } catch {}
   }
   return total;
@@ -586,7 +591,9 @@ function computeSkillPAForAttr(attrId) {
   const skillsData = S.skills();
   getSkillCats().forEach(cat => {
     if (SKILL_PA_MAP[cat.cat] !== attrId) return;
-    cat.items.forEach(name => { if ((skillsData[name]||0)===2) total+=SKILL_PA_AMOUNT; });
+    cat.items.forEach(name => {
+      if ((skillsData[name] || 0) === 2) total += SKILL_PA_AMOUNT;
+    });
   });
   return total;
 }
@@ -951,8 +958,8 @@ function renderShop() {
   });
   const malusGrid=document.getElementById('malus-grid'); malusGrid.innerHTML='';
   getMaluses().forEach((m,i)=>{
-    const card=document.createElement('div'); card.className='malus-card'; card.style.cursor='pointer';
-    card.innerHTML=`<div class="malus-emoji">${m.e}</div><div class="malus-nm">${m.n}</div><div class="malus-cost">-${m.c} PD</div><div style="position:absolute;top:5px;right:5px;display:flex;gap:2px;"><button class="btn-edit-item malus-edit-btn">✏️</button><button class="btn-del-item malus-del-btn">🗑</button></div>`;
+    const card=document.createElement('div'); card.className='shop-card'; card.style.cursor='pointer';card.style.borderColor='rgba(248,113,113,.2)';
+    card.innerHTML=`<div class="shop-emoji">${m.e}</div><div class="shop-nm">${m.n}</div><div class="shop-cost" style="color:#f87171;">-${m.c} PD</div><div style="font-size:.58rem;color:#f87171;margin-top:2px;">Enregistrer un écart</div><div style="position:absolute;top:5px;right:5px;display:flex;gap:2px;"><button class="btn-edit-item malus-edit-btn">✏️</button><button class="btn-del-item malus-del-btn">🗑</button></div>`;
     card.addEventListener('click',e=>{if(!e.target.closest('button'))applyMalus(i);});
     card.querySelector('.malus-edit-btn').addEventListener('click',e=>{e.stopPropagation();openEditModal('editmalus',i);});
     card.querySelector('.malus-del-btn').addEventListener('click',e=>{e.stopPropagation();deleteMalus(i);});
