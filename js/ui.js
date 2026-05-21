@@ -158,10 +158,12 @@ function renderToday() {
     new Date(t + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
   renderSystemMsg(t);
   renderSequelles(t);
+  renderSeason(t);
   renderRing(t);
   renderTodayChips(t);
   renderThreshold(t);
   renderXP();
+  renderProphecy(t);
   renderEquippedTitle();
 }
 
@@ -177,6 +179,71 @@ function renderEquippedTitle() {
   }
 }
 
+function renderSeason(today) {
+  const el = document.getElementById('season-banner');
+  if (!el) return;
+  const s = getCurrentSeason(today);
+  if (!s) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+      <div style="font-size:.62rem;color:#a78bfa;text-transform:uppercase;letter-spacing:.1em;font-weight:600;">
+        ⚔️ Saison ${s.number} — ${s.name}
+      </div>
+      <div style="font-size:.62rem;font-family:'DM Mono',monospace;color:var(--muted);">
+        J${s.daysDone}/90 · ${s.daysLeft}j restants
+      </div>
+    </div>
+    <div style="background:var(--surface3);border-radius:4px;height:4px;overflow:hidden;">
+      <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#7c3aed,#a855f7);width:${s.pct}%;transition:width 1s;"></div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:6px;font-size:.62rem;color:var(--muted);">
+      <span>✅ ${s.perfect} parfaites</span>
+      <span>🔥 ${s.streak}j streak</span>
+      <span>⚔️ ${s.bossWon} boss</span>
+    </div>`;
+}
+
+function renderProphecy(today) {
+  const el = document.getElementById('prophecy-banner');
+  if (!el) return;
+  const p = computeProphecy(today);
+  if (!p) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="font-size:.6rem;color:#fbbf24;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:3px;">
+      🔮 Prophétie du Système
+    </div>
+    <div style="font-size:.76rem;color:var(--text);line-height:1.6;">
+      À ce rythme <span style="color:#fbbf24;font-weight:700;">(+${p.dailyPD} PD/j)</span>, 
+      tu atteindras le rang 
+      <span style="color:${p.nextRank.c};font-weight:700;">${p.nextRank.e} ${p.nextRank.n}</span> 
+      dans <span style="color:var(--accent);font-weight:700;">${p.daysNeeded} jours</span> 
+      — aux alentours du <span style="color:var(--text2);">${p.targetDate}</span>.
+    </div>
+    <div style="font-size:.62rem;color:var(--muted);margin-top:3px;">
+      Il manque ${p.pdNeeded.toLocaleString()} PD.
+    </div>`;
+}
+
+function renderSequelles(today) {
+  const active = getActiveSequelles(today);
+  const container = document.getElementById('sequelles-container');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!active.length) return;
+  active.forEach(seq => {
+    const daysLeft = Math.max(0, Math.round(
+      (new Date(seq.endDate + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000
+    ));
+    const div = document.createElement('div');
+    div.className = 'sequelle-banner';
+    div.innerHTML = `
+      ⚠️ <strong>${seq.name}</strong> — ${seq.narrative}
+      <span class="sequelle-days">${daysLeft}j restant${daysLeft > 1 ? 's' : ''}</span>`;
+    container.appendChild(div);
+  });
+}
 function renderSystemMsg(t) {
   const { text, tone } = getSystemMessage(t);
   const el = document.getElementById('system-msg');
