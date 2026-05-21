@@ -447,3 +447,83 @@ function escAttr(str) {
     .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+// ── PROPHÉTIE ──
+function computeProphecy(today) {
+  const dates = Object.keys(allData).sort();
+  if (dates.length < 7) return null;
+
+  // Moyenne des 14 derniers jours
+  const last14 = dates.slice(-14);
+  const avgScore = last14.reduce((a, d) => a + scoreDay(d), 0) / last14.length;
+  const dailyPD = avgScore * 10 + (avgScore >= HABITS.length ? 150 / HABITS.length : 0);
+
+  const xp = computeXP();
+  const rank = getRank(xp);
+  const next = RANKS[RANKS.indexOf(rank) + 1];
+  if (!next) return null;
+
+  const pdNeeded = next.min - xp;
+  if (pdNeeded <= 0) return null;
+
+  const daysNeeded = Math.ceil(pdNeeded / Math.max(dailyPD, 1));
+  const targetDate = addDays(today, daysNeeded);
+  const targetDateFmt = new Date(targetDate + 'T12:00:00')
+    .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+  return {
+    nextRank: next,
+    daysNeeded,
+    targetDate: targetDateFmt,
+    dailyPD: Math.round(dailyPD),
+    pdNeeded,
+  };
+}
+
+// ── SAISONS ──
+function getCurrentSeason(today) {
+  const dates = Object.keys(allData).sort();
+  if (!dates.length) return null;
+
+  const firstDate = dates[0];
+  const daysSinceStart = Math.max(0, Math.round(
+    (new Date(today + 'T12:00:00') - new Date(firstDate + 'T12:00:00')) / 86400000
+  ));
+  const seasonNumber = Math.floor(daysSinceStart / 90) + 1;
+  const seasonStart  = addDays(firstDate, (seasonNumber - 1) * 90);
+  const seasonEnd    = addDays(seasonStart, 89);
+  const daysLeft     = Math.max(0, Math.round(
+    (new Date(seasonEnd + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000
+  ));
+  const daysDone     = 90 - daysLeft;
+  const pct          = Math.round(daysDone / 90 * 100);
+
+  const seasonNames  = [
+    'L\'Éveil','Le Forgeron','Le Chasseur','La Forge du Guerrier',
+    'L\'Épreuve','La Maîtrise','La Transcendance','L\'Infini',
+  ];
+  const name = seasonNames[(seasonNumber - 1) % seasonNames.length];
+
+  // Stats de la saison courante
+  const seasonDates = dates.filter(d => d >= seasonStart && d <= today);
+  const seasonPerfect = seasonDates.filter(d => isPerfect(d)).length;
+  const { streak: seasonStreak } = computeStreak(today);
+  const bossWon = Object.values(S.boss()).filter(b => b.declared === 'won').length;
+
+  return {
+    number: seasonNumber,
+    name,
+    start: seasonStart,
+    end: seasonEnd,
+    daysLeft,
+    daysDone,
+    pct,
+    perfect: seasonPerfect,
+    streak: seasonStreak,
+    bossWon,
+  };
+}
+
+// ── SÉQUELLES ACTIVES POUR AFFICHAGE ──
+function getActiveSequelles(today) {
+  return S.sequelles().filter(s => s.active && s.endDate >= today);
+}
