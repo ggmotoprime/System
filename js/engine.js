@@ -111,8 +111,11 @@ function computeXP() {
   const dates = Object.keys(allData).sort();
   let xp = 0, run = 0;
 
-  // Passif A : +2 PA par habitude
-  const bonusPerHabit = hasPassif('mastery') ? 2 : 0;
+  // Passif A : +2 PA par habitude (lu depuis le rang stocké, pas calculé)
+  const lastRankLetter = S.lastRank();
+  const rankOrder = ['E','D','C','B','A','S','SS','SSS'];
+  const currentRankIdx = rankOrder.indexOf(lastRankLetter);
+  const bonusPerHabit = currentRankIdx >= 4 ? 2 : 0; // Rang A = index 4
 
   for (const d of dates) {
     const s = scoreDay(d);
@@ -121,14 +124,14 @@ function computeXP() {
     run = isPerfect(d) ? run + 1 : 0;
 
     // Passif S : bonus streak doublé
-    const streakMult = hasPassif('ascension') ? 2 : 1;
+    const streakMult = currentRankIdx >= 5 ? 2 : 1; // Rang S = index 5
     if (run === 7)   xp += 300  * streakMult;
     if (run === 30)  xp += 1000 * streakMult;
     if (run === 100) xp += 5000 * streakMult;
   }
 
-  // Passif B : semaines 7/7 ≥ 7/10 → +200 PD
-  if (hasPassif('momentum')) {
+    // Passif B : semaines 7/7 ≥ 7/10 → +200 PD
+    if (currentRankIdx >= 3) { // Rang B = index 3
     xp += computeMomentumBonus();
   }
 
