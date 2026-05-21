@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Solo Leveling</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- TOOLTIP -->
+<div id="tooltip"></div>
+
+<!-- ÉVEIL OVERLAY -->
+<div class="awakening-overlay" id="awakening-overlay"></div>
+
+<!-- CONFIRM OVERLAY -->
+<div class="overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Confirmer</div>
+    <div class="confirm-desc" id="confirm-desc"></div>
+    <div class="confirm-acts">
+      <button class="confirm-yes" id="confirm-yes">Confirmer</button>
+      <button class="confirm-no" id="confirm-no">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ÉDITION -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span id="edit-modal-title">Modifier</span>
+      <button class="modal-close" id="modal-close-btn">✕</button>
+    </div>
+    <div id="edit-modal-body"></div>
+    <div class="modal-acts">
+      <button class="btn-save" id="modal-save-btn">💾 Sauvegarder</button>
+      <button class="btn-cancel-m" id="modal-cancel-btn">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div id="config-panel">
+  <div class="config-logo">⚡</div>
+  <h1>Solo Leveling</h1>
+  <p class="sub">Connecte ton Database ID Notion pour tracker tes habitudes.</p>
+  <div class="field">
+    <label>Database ID Notion</label>
+    <input type="text" id="db-input" placeholder="34d0614c879780b38b64dc3312a5f63c">
+  </div>
+  <button class="btn-primary" id="connect-btn">Connecter →</button>
+  <div id="error-msg"></div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--muted);font-size:.82rem;">Chargement…</p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="today">🌅 Aujourd'hui</button>
+    <button class="tab-btn" data-tab="attr">⚔️ Attributs</button>
+    <button class="tab-btn" data-tab="skills">🧠 Skills</button>
+    <button class="tab-btn" data-tab="guide">📖 Guide</button>
+    <button class="tab-btn" data-tab="bosscal">👹 Boss</button>
+    <button class="tab-btn" data-tab="questlist">📜 Quêtes</button>
+    <button class="tab-btn" data-tab="history">📋 Historique</button>
+    <button class="tab-btn" data-tab="badges">🎖️ Badges</button>
+    <button class="tab-btn" data-tab="titles">👑 Titres</button>
+    <button class="tab-btn" data-tab="chronicles">📜 Chroniques</button>
+    <button class="tab-btn" data-tab="shop">🛍️ Boutique</button>
+    <button class="tab-btn" data-tab="stats">📊 Stats</button>
+  </div>
+
+  <!-- EDIT BAR -->
+  <div class="edit-bar">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="edit-dot" id="edit-dot"></div>
+      <span id="edit-mode-label" style="font-size:.7rem;color:var(--muted);">Mode normal</span>
+    </div>
+    <button class="edit-toggle-btn" id="edit-toggle-btn">✏️ Mode édition</button>
+  </div>
+
+  <!-- ═══ AUJOURD'HUI ═══ -->
+  <div class="tab-content active" id="tab-today">
+    <div class="top-bar">
+      <div>
+        <div style="font-size:1rem;font-weight:700;">🌿 Solo Leveling</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:1px;" id="today-date-sub"></div>
+        <div id="equipped-title" style="font-size:.72rem;color:#fbbf24;font-weight:600;margin-top:2px;display:none;"></div>
+      </div>
+      <div class="top-right">
+        <button class="icon-btn" id="refresh-btn">↻</button>
+        <button class="icon-btn" id="theme-btn">☀️/🌙</button>
+        <button class="icon-btn" id="reset-menu-btn" style="color:#f87171;">↺</button>
+        <button class="icon-btn" id="logout-btn">Déco.</button>
+      </div>
+    </div>
+
+    <!-- Message du Système -->
+    <div class="system-msg tone-neutral anim" id="system-msg"></div>
+
+    <!-- Séquelles actives -->
+    <div id="sequelles-container"></div>
+
+    <!-- Ring + habitudes -->
+    <div class="hero-row anim">
+      <div class="ring-box">
+        <div class="ring-wrap">
+          <canvas id="ring-chart" width="118" height="118"></canvas>
+          <div class="ring-center">
+            <div class="ring-pct" id="ring-pct">0%</div>
+            <div class="ring-lbl">Aujourd'hui</div>
+          </div>
+        </div>
+        <div class="ring-detail" id="ring-detail"></div>
+        <div class="ring-sub" id="ring-sub"></div>
+      </div>
+      <div class="today-box">
+        <div class="card-title">Habitudes du jour</div>
+        <div class="habits-grid" id="today-chips"></div>
+      </div>
+    </div>
+
+    <!-- Seuil -->
+    <div class="threshold anim" id="threshold-banner"></div>
+
+    <!-- XP / Rang -->
+    <div class="xp-card anim">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+        <div class="card-title" style="margin:0;">Progression annuelle</div>
+        <button id="ranks-btn" class="icon-btn" style="font-size:.66rem;">Rangs ▾</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:.9rem;font-weight:700;" id="xp-level"></div>
+        <span id="rank-pill"></span>
+      </div>
+      <div class="xp-bar-bg"><div class="xp-bar" id="xp-bar" style="width:0%"></div></div>
+      <div class="xp-meta"><span id="xp-cur"></span><span id="xp-nxt"></span></div>
+      <div class="xp-breakdown" id="xp-breakdown"></div>
+      <div id="active-passif"></div>
+      <div class="ranks-panel" id="ranks-panel"></div>
+    </div>
+
+    <!-- Boss -->
+    <div class="boss-card anim" id="boss-card"></div>
+
+    <!-- Quêtes secondaires -->
+    <div class="card anim">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;">
+        <div class="card-title" style="margin:0;">⚔️ Quêtes secondaires</div>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <div class="edit-actions">
+            <button class="btn-add" id="add-quest-today-btn">➕</button>
+          </div>
+          <button class="qb rst" id="reset-quests-btn" style="font-size:.62rem;">↺ Reset</button>
+        </div>
+      </div>
+      <div class="quest-list" id="quest-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ATTRIBUTS ═══ -->
+  <div class="tab-content" id="tab-attr">
+    <div style="padding-top:.8rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;">
+        <div>
+          <div style="font-size:1rem;font-weight:700;">⚔️ Attributs RPG</div>
+          <div style="font-size:.7rem;color:var(--muted);">Habitudes + Boss + Quêtes + Skills</div>
+        </div>
+        <button class="icon-btn" id="reset-attr-btn" style="color:#f87171;font-size:.7rem;">↺ Reset</button>
+      </div>
+      <div id="attr-grid"></div>
+    </div>
+  </div>
+
+  <!-- ═══ SKILLS ═══ -->
+  <div class="tab-content" id="tab-skills">
+    <div style="padding-top:.8rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+        <div>
+          <div style="font-size:1rem;font-weight:700;">🧠 Skills</div>
+          <div style="font-size:.7rem;color:var(--muted);">Maîtriser un skill = +80 PA à l'attribut lié</div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-add" id="add-skill-btn">➕ Skill</button>
+        </div>
+      </div>
+      <div class="skills-stats" id="skills-stats"></div>
+      <input class="skills-search" type="text" id="skills-search" placeholder="Rechercher...">
+      <div class="skill-cats" id="skill-cats"></div>
+      <div class="skills-grid" id="skills-grid"></div>
+    </div>
+  </div>
+
+  <!-- ═══ GUIDE ═══ -->
+  <div class="tab-content" id="tab-guide">
+    <div style="padding-top:.8rem;" id="guide-content"></div>
+  </div>
+
+  <!-- ═══ BOSS CALENDAR ═══ -->
+  <div class="tab-content" id="tab-bosscal">
+    <div style="padding-top:.8rem;" id="bosscal-content"></div>
+  </div>
+
+  <!-- ═══ QUÊTES ═══ -->
+  <div class="tab-content" id="tab-questlist">
+    <div style="padding-top:.8rem;" id="questlist-content"></div>
+  </div>
+
+  <!-- ═══ HISTORIQUE ═══ -->
+  <div class="tab-content" id="tab-history">
+    <div style="padding-top:.8rem;">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.8rem;">📋 Historique Boss &amp; Quêtes</div>
+      <div class="hist-filter" id="hist-filter"></div>
+      <div id="hist-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ BADGES ═══ -->
+  <div class="tab-content" id="tab-badges">
+    <div style="padding-top:.8rem;">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.3rem;">🎖️ Badges</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:1rem;">Achievements débloqués automatiquement</div>
+      <div id="badges-page"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TITRES ═══ -->
+  <div class="tab-content" id="tab-titles">
+    <div style="padding-top:.8rem;">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.3rem;">👑 Titres</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:1rem;">Débloque et équipe un titre sur ton profil</div>
+      <div id="titles-page"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CHRONIQUES ═══ -->
+  <div class="tab-content" id="tab-chronicles">
+    <div style="padding-top:.8rem;">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.3rem;">📜 Chroniques</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:1rem;">Journal automatique de tes moments clés</div>
+      <div id="chronicles-page"></div>
+    </div>
+  </div>
+
+  <!-- ═══ BOUTIQUE ═══ -->
+  <div class="tab-content" id="tab-shop">
+    <div style="padding-top:.8rem;">
+      <div class="pd-hero">
+        <div class="pd-amount" id="pd-val">—</div>
+        <div class="pd-lbl">PD disponibles</div>
+        <div class="pd-rank" id="pd-rank"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;">
+          <div class="card-title" style="margin:0;">🎁 Bonus</div>
+          <div class="edit-actions">
+            <button class="btn-add" id="add-bonus-btn">➕</button>
+          </div>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;">
+          <div class="card-title" style="margin:0;">💀 Malus</div>
+          <div class="edit-actions">
+            <button class="btn-add" id="add-malus-btn">➕</button>
+          </div>
+        </div>
+        <div class="shop-grid" id="malus-grid"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;">
+          <div class="card-title" style="margin:0;">📋 Historique</div>
+          <button class="icon-btn" id="clear-tx-btn" style="color:#f87171;font-size:.7rem;">Effacer</button>
+        </div>
+        <div class="tx-log" id="tx-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STATS ═══ -->
+  <div class="tab-content" id="tab-stats">
+    <div style="padding-top:.8rem;">
+      <div class="stats-grid anim">
+        <div class="stat-card"><div class="stat-lbl">🔥 Streak</div><div class="stat-val" id="stat-streak">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">🏆 Best</div><div class="stat-val" id="stat-best">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">✅ Total</div><div class="stat-val" id="stat-total">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">⭐ Parfaits</div><div class="stat-val" id="stat-perfect">—</div></div>
+      </div>
+      <div class="con-row">
+        <div class="con-card"><div class="con-val" id="con-week">—</div><div class="con-lbl">Semaine</div></div>
+        <div class="con-card"><div class="con-val" id="con-month">—</div><div class="con-lbl">Mois</div></div>
+        <div class="con-card"><div class="con-val" id="con-rate">—</div><div class="con-lbl">Global</div></div>
+      </div>
+      <div class="bw-row">
+        <div class="bw-card"><div class="bw-lbl">🌟 Meilleure</div><div class="bw-nm" id="best-habit">—</div><div class="bw-pct" id="best-pct"></div></div>
+        <div class="bw-card"><div class="bw-lbl">⚠️ A travailler</div><div class="bw-nm" id="worst-habit">—</div><div class="bw-pct" id="worst-pct"></div></div>
+      </div>
+      <div class="card">
+        <div class="week-nav">
+          <button class="wn-btn" id="week-prev">← Préc.</button>
+          <span class="wn-lbl" id="week-nav-lbl">Cette semaine</span>
+          <button class="wn-btn" id="week-next" disabled>Suiv. →</button>
+        </div>
+        <div class="week-scores" id="week-scores"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Comparaison</div>
+        <div class="comp-grid" id="comp-grid"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;">
+          <div class="card-title" style="margin:0;">Activité annuelle</div>
+          <select class="year-sel" id="year-sel"></select>
+        </div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-header" id="heatmap-months"></div>
+          <div class="heatmap-body">
+            <div class="day-labels">
+              <div class="day-lbl"></div><div class="day-lbl">L</div>
+              <div class="day-lbl"></div><div class="day-lbl">M</div>
+              <div class="day-lbl"></div><div class="day-lbl">J</div>
+              <div class="day-lbl"></div>
+            </div>
+            <div class="heatmap-cols" id="heatmap-cols"></div>
+          </div>
+        </div>
+        <div class="hm-legend">
+          <span>0</span>
+          <div class="legend-cells" id="hm-legend-cells"></div>
+          <span>10</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Taux de complétion</div>
+        <div class="filter-row" id="filter-row"></div>
+        <div class="bar-list" id="bar-list"></div>
+      </div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Répartition</div>
+          <div class="donut-wrap">
+            <canvas id="donut-chart" width="128" height="128"></canvas>
+            <div class="donut-center">
+              <div class="big" id="donut-total">0</div>
+              <div class="small">completions</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Légende</div>
+          <div class="legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- fin dashboard -->
+
+<!-- SCRIPTS — ordre important -->
+<script src="/js/data.js"></script>
+<script src="/js/storage.js"></script>
+<script src="/js/engine.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/stats.js"></script>
+<script src="/js/app.js"></script>
+
+</body>
+</html>
