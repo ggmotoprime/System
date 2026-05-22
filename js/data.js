@@ -19,7 +19,6 @@ const RANKS = [
   {n:'SSS — Transcendant', e:'⭐', min:120000, max:Infinity, c:'#fbbf24', d:'365 jours de discipline absolue.', passif:null},
 ];
 
-// Textes d'Éveil par rang
 const RANK_AWAKENING = {
   'D': {
     title: "L'Apprenti est Né",
@@ -53,7 +52,6 @@ const RANK_AWAKENING = {
   },
 };
 
-// Messages du Système — voix narrative adaptative
 const SYSTEM_MESSAGES = {
   perfect: [
     "10/10. Le Système enregistre. Rang provisoire : DIGNE.",
@@ -113,23 +111,29 @@ const SYSTEM_MESSAGES = {
   ]
 };
 
-// Titres débloquables
 const TITLES = [
-  {id:'inarretable',   name:'Inarrêtable',      condition: d => d.best >= 14},
-  {id:'centurion',     name:'Le Centurion',      condition: d => d.best >= 100},
-  {id:'recitant',      name:'Récitant',          condition: d => (d.habitCounts['Coran']||0) >= 30},
-  {id:'hors_du_bruit', name:'Hors du Bruit',     condition: d => (d.habitStreaks['No Scroll']||0) >= 14},
-  {id:'fils_du_fer',   name:'Fils du Fer',       condition: d => d.bossWonCount >= 3},
-  {id:'chasseur',      name:'Chasseur',          condition: d => d.rankIndex >= 2},
-  {id:'guerrier',      name:'Guerrier',          condition: d => d.rankIndex >= 3},
-  {id:'elite',         name:'Élite',             condition: d => d.rankIndex >= 4},
-  {id:'vainqueur',     name:'Vainqueur de l\'Ombre', condition: d => d.bossWonCount >= 5},
-  {id:'silencieux',    name:'Le Silencieux',     condition: d => (d.habitCounts['No Scroll']||0) >= 50},
-  {id:'priant',        name:'Le Priant',         condition: d => (d.habitCounts['Priere']||0) >= 60},
-  {id:'premier_pas',   name:'Premier Pas',       condition: d => d.totalDays >= 1},
+  {id:'premier_pas',    name:'Premier Pas',           condition: d => d.totalDays >= 1},
+  {id:'inarretable',    name:'Inarrêtable',            condition: d => d.best >= 14},
+  {id:'centurion',      name:'Le Centurion',           condition: d => d.best >= 100},
+  {id:'recitant',       name:'Récitant',               condition: d => (d.habitCounts['Coran']||0) >= 30},
+  {id:'hors_du_bruit',  name:'Hors du Bruit',          condition: d => (d.habitStreaks['No Scroll']||0) >= 14},
+  {id:'fils_du_fer',    name:'Fils du Fer',            condition: d => d.bossWonCount >= 3},
+  {id:'chasseur',       name:'Chasseur',               condition: d => d.rankIndex >= 2},
+  {id:'guerrier',       name:'Guerrier',               condition: d => d.rankIndex >= 3},
+  {id:'elite',          name:'Élite',                  condition: d => d.rankIndex >= 4},
+  {id:'vainqueur',      name:'Vainqueur de l\'Ombre',  condition: d => d.bossWonCount >= 5},
+  {id:'silencieux',     name:'Le Silencieux',          condition: d => (d.habitCounts['No Scroll']||0) >= 50},
+  {id:'priant',         name:'Le Priant',              condition: d => (d.habitCounts['Priere']||0) >= 60},
+  {id:'sans_faille',    name:'Sans Faille',            condition: d => d.bossWonCount >= 5 && d.rankIndex >= 1},
+  {id:'fils_ummah',     name:'Fils de la Ummah',       condition: d => (d.habitCounts['Priere']||0) >= 60 && (d.habitCounts['Coran']||0) >= 60},
+  {id:'sobre',          name:'Le Sobre',               condition: d => (d.habitStreaks['Nutrition']||0) >= 30},
+  {id:'maitre_ombres',  name:'Maître des Ombres',      condition: d => (d.habitCounts['No Scroll']||0) >= 100},
+  {id:'gardien_temple', name:'Gardien du Temple',      condition: d => (d.habitCounts['Priere']||0) >= 100},
+  {id:'erudit',         name:'L\'Érudit',              condition: d => (d.habitCounts['Chess']||0) >= 50 && (d.habitCounts['Arabe']||0) >= 50},
+  {id:'architecte',     name:'Architecte',             condition: d => d.rankIndex >= 3 && d.bossWonCount >= 8},
+  {id:'transcendant',   name:'Transcendant',           condition: d => d.rankIndex >= 6},
 ];
 
-// Textes narratifs par palier d'attribut
 const ATTR_NARRATIVES = {
   discipline:    {5:"La routine commence à tenir.",10:"L'effort n'est plus une question — c'est une réponse.",20:"Tu portes quelque chose que la plupart ne cherchent jamais.",50:"Niveau 50. Le Système reclassifie : Discipliné Confirmé.",100:"Maximum. Le Système n'a plus rien à mesurer ici."},
   physique:      {5:"Ton corps commence à comprendre le langage de l'effort.",10:"L'effort n'est plus une douleur. C'est un dialogue.",20:"Tu portes quelque chose que la plupart n'ont jamais cherché.",50:"Niveau 50 — Physique. Athlète Confirmé.",100:"Maximum. Le Système n'a plus rien à mesurer ici."},
@@ -160,17 +164,27 @@ const ATTRIBUTES = [
    subs:[{id:'exe_finish',name:'Finir',desc:'Aller jusqu au bout'},{id:'exe_prio',name:'Priorisation',desc:'Identifier ce qui compte'},{id:'exe_vitesse',name:'Vitesse',desc:'Agir rapidement'},{id:'exe_constance',name:'Constance',desc:'Maintenir effort'}]},
 ];
 
-// PA donnés par boss selon difficulté (répartis sur l'attribut du boss)
-const BOSS_PA_BY_DIFF = { 'Normale':60, 'Difficile':120, 'Extreme':200, 'Legendaire':300 };
-
-// PA donnés par quête selon difficulté
-const QUEST_PA_BY_DIFF = { 'easy':30, 'medium':60, 'hard':100 };
-
-// PA donnés par skill maîtrisé selon catégorie
+const BOSS_PA_BY_DIFF   = { 'Normale':60, 'Difficile':120, 'Extreme':200, 'Legendaire':300 };
+const QUEST_PA_BY_DIFF  = { 'easy':30, 'medium':60, 'hard':100 };
 const SKILL_PA_MAP = {
-  'Calisthenics':'physique', 'Endurance':'physique', 'Force':'physique',
-  'Echecs':'intelligence', 'Coran et Islam':'spiritualite', 'Langue Arabe':'intelligence',
-  'Mental':'mental', 'Code et Tech':'execution', 'Cuisine':'execution',
+  'Calisthenics':           'physique',
+  'Endurance & Course':     'physique',
+  'Force & Musculation':    'physique',
+  'Mobilite & Souplesse':   'physique',
+  'Arts Martiaux & Grappling': 'physique',
+  'Natation':               'physique',
+  'Echecs':                 'intelligence',
+  'Coran & Islam':          'spiritualite',
+  'Langue Arabe':           'intelligence',
+  'Code & Tech':            'execution',
+  'Mecanique & Bricolage':  'execution',
+  'Cuisine & Nutrition':    'nutrition',
+  'Finance & Business':     'execution',
+  'Survie & Autonomie':     'mental',
+  'Memoire & Apprentissage':'intelligence',
+  'Creation & Expression':  'intelligence',
+  'Psychologie & Discipline':'mental',
+  'Culture Generale':       'intelligence',
 };
 const SKILL_PA_AMOUNT = 80;
 
@@ -190,6 +204,31 @@ const BOSSES_DEFAULT = [
   {n:'Le Moine du Lever',i:'🌙',d:'Extreme',l:'Fajr + 20min dhikr avant tout ecran. 7j.',s:['Fajr+dhikr lundi','Fajr+dhikr mardi','Fajr+dhikr mercredi','Fajr+dhikr jeudi','Fajr+dhikr vendredi','Fajr+dhikr samedi','Fajr+dhikr dimanche'],r:800,a:'spiritualite',week:13},
   {n:'Le Polyglotte',i:'🌍',d:'Difficile',l:'100 mots arabes/jour + test final.',s:['100 mots lundi','100 mots mardi','100 mots mercredi','100 mots jeudi','100 mots vendredi','100 mots samedi','Test 80% dimanche'],r:700,a:'intelligence',week:14},
   {n:'La Diete Mentale',i:'🧘',d:'Difficile',l:'10min meditation + 30min sans telephone. 7j.',s:['Meditation lundi','Meditation mardi','Meditation mercredi','Meditation jeudi','Meditation vendredi','Meditation samedi','Meditation dimanche'],r:500,a:'mental',week:15},
+  {n:'Le Leve-Tot Absolu',i:'⚡',d:'Legendaire',l:'5h + douche froide + sport + Coran avant 7h. 7j.',s:['Protocole complet lundi','Protocole mardi','Protocole mercredi','Protocole jeudi','Protocole vendredi','Protocole samedi','Protocole dimanche'],r:1200,a:'discipline',week:16},
+  {n:'Le Handstand',i:'🤸',d:'Legendaire',l:'Tenir un handstand 10 secondes.',s:['Entrainement mur lundi','Entrainement mur mardi','Equilibre mercredi','Equilibre jeudi','Raffinement vendredi','Raffinement samedi','Handstand 10s dimanche'],r:1100,a:'physique',week:17},
+  {n:'Le Marathon',i:'🏃',d:'Legendaire',l:'Courir 42km. Semaine de preparation.',s:['10km lundi','Recuperation mardi','15km mercredi','Recuperation jeudi','5km vendredi','Repos samedi','Marathon dimanche'],r:1500,a:'physique',week:18},
+  {n:'Le Nageur',i:'🌊',d:'Difficile',l:'1km non-stop, 7 jours.',s:['1km nage lundi','1km nage mardi','1km nage mercredi','1km nage jeudi','1km nage vendredi','1km nage samedi','1km nage dimanche'],r:750,a:'physique',week:19},
+  {n:'Le Sparring',i:'🥊',d:'Difficile',l:'3 sessions de grappling/combat.',s:['Session 1','Session 2','Session 3','Analyse points faibles'],r:600,a:'physique',week:20},
+  {n:'L Immersion Totale',i:'🧊',d:'Extreme',l:'Bain de glace 5min chaque matin. 7j.',s:['Bain 5min lundi','Bain 5min mardi','Bain 5min mercredi','Bain 5min jeudi','Bain 5min vendredi','Bain 5min samedi','Bain 5min dimanche'],r:900,a:'mental',week:21},
+  {n:'Le Scripteur',i:'📝',d:'Normale',l:'500 mots par jour. 7 jours.',s:['500 mots lundi','500 mots mardi','500 mots mercredi','500 mots jeudi','500 mots vendredi','500 mots samedi','500 mots dimanche'],r:450,a:'intelligence',week:22},
+  {n:'Le Tireur',i:'🎯',d:'Difficile',l:'Finir 3 taches repoussees.',s:['Identifier les 3 taches','Tache 1','Tache 2','Tache 3'],r:700,a:'execution',week:23},
+  {n:'L Immersif Arabophone',i:'🌍',d:'Extreme',l:'Penser et ecrire en arabe. 7j.',s:['Penser arabe lundi','Ecrire arabe mardi','Conversation arabe mercredi','Journal arabe jeudi','Revision vendredi','Test oral samedi','Bilan dimanche'],r:1000,a:'intelligence',week:24},
+  {n:'Le 1000 Reps',i:'🏋️',d:'Extreme',l:'1000 repetitions sur la semaine.',s:['200 reps lundi','200 reps mardi','200 reps mercredi','200 reps jeudi','200 reps vendredi'],r:800,a:'physique',week:25},
+  {n:'Le Stoique',i:'😶',d:'Difficile',l:'Zero plainte, zero commentaire negatif. 7j.',s:['Zero plainte lundi','Zero plainte mardi','Zero plainte mercredi','Zero plainte jeudi','Zero plainte vendredi','Zero plainte samedi','Zero plainte dimanche'],r:650,a:'mental',week:26},
+  {n:'Le Vide Total',i:'📵',d:'Legendaire',l:'Zero divertissement + 5h + douche froide. 7j.',s:['Vide complet lundi','Vide complet mardi','Vide complet mercredi','Vide complet jeudi','Vide complet vendredi','Vide complet samedi','Vide complet dimanche'],r:1300,a:'discipline',week:27},
+  {n:'La Retraite Spirituelle',i:'🤲',d:'Extreme',l:'5 prieres + Coran 1h + dhikr + tahajjud. 7j.',s:['5 prieres + Coran 1h lundi','Dhikr matin+soir lundi','Meme mar-mer','Meme jeu-ven','Reciter sourate samedi','Bilan dimanche'],r:1100,a:'spiritualite',week:28},
+  {n:'Le Maitre du Sommeil',i:'💤',d:'Difficile',l:'Au lit avant 22h, leve avant 6h. 7j.',s:['22h couche lundi','Leve 6h mardi','Mar-mer protocol','Jeu-ven protocol','Sam-dim protocol'],r:600,a:'discipline',week:29},
+  {n:'Le Repetiteur',i:'🔁',d:'Normale',l:'Reviser 200 mots arabes.',s:['50 mots lundi','50 mots mardi','50 mots mercredi','50 mots jeudi','Test 80% vendredi'],r:500,a:'intelligence',week:30},
+  {n:'Le Backflip',i:'🔄',d:'Legendaire',l:'Reussir un backflip.',s:['Rotation body lundi','Rotation body mardi','Backflip assiste mercredi','Backflip assiste jeudi','Semi-assiste vendredi','Semi-assiste samedi','Backflip solo dimanche'],r:1400,a:'physique',week:31},
+  {n:'Les 100km de Marche',i:'🚶',d:'Legendaire',l:'Marcher 100km en une journee.',s:['Preparation physique J-7','Alimentation optimale J-3','Equipement prepare','Depart 4h matin','50km atteints','75km atteints','100km - Terminer'],r:2000,a:'physique',week:32},
+  {n:'Lire le Coran en Entier',i:'📖',d:'Legendaire',l:'Lire les 114 sourates en 7 jours.',s:['Juzz 1-4 lundi','Juzz 5-8 mardi','Juzz 9-12 mercredi','Juzz 13-16 jeudi','Juzz 17-20 vendredi','Juzz 21-25 samedi','Juzz 26-30 dimanche'],r:1800,a:'spiritualite',week:33},
+  {n:'Apprendre Juzz Amma',i:'🌟',d:'Extreme',l:'Memoriser les sourates de Juzz Amma.',s:['Sourates 114-110 lundi','Sourates 109-105 mardi','Sourates 104-100 mercredi','Sourates 99-95 jeudi','Sourates 94-90 vendredi','Revision samedi','Recitation complete dimanche'],r:1300,a:'spiritualite',week:34},
+  {n:'L Expose',i:'🎤',d:'Extreme',l:'Parler devant un groupe sur un sujet complexe.',s:['Choisir sujet + recherche','Structurer discours','Repetition solo','Repetition filmee','Corriger erreurs','Repetition devant 1 personne','Expose devant le groupe'],r:900,a:'social',week:35},
+  {n:'Le Connecteur',i:'🤝',d:'Difficile',l:'Creer 5 nouvelles relations utiles en 7 jours.',s:['Relation 1','Relation 2','Relation 3','Relation 4','Relation 5','Suivre chaque relation','Consolider 2'],r:700,a:'social',week:36},
+  {n:'L Assertif',i:'🧠',d:'Extreme',l:'Dire clairement ce que tu penses dans 5 situations.',s:['Dire non clairement','Exprimer desaccord','Demander quelque chose','Recadrer quelqu un','Exprimer un besoin'],r:850,a:'social',week:37},
+  {n:'Le Leader',i:'🎯',d:'Legendaire',l:'Organiser quelque chose.',s:['Concevoir le projet','Recruter participants','Planifier en detail','Briefer tout le monde','Jour J - execution','Post-bilan','Ameliorer pour la prochaine'],r:1100,a:'social',week:38},
+  {n:'Creer un Site Web',i:'💻',d:'Legendaire',l:'Creer un site web professionnel.',s:['Choisir niche + domaine','Configurer hebergement','Creer structure HTML/CSS','Ajouter contenu x3 pages','Rendre responsive','SEO basique','Mettre en ligne et tester'],r:1200,a:'intelligence',week:39},
+  {n:'1000 Pompes en une Journee',i:'💥',d:'Legendaire',l:'1000 pompes dans la meme journee.',s:['100 pompes matin','100 pompes matin 2','100 pompes midi','100 pompes apres-midi 1','100 pompes apres-midi 2','200 pompes soir 1','200 pompes soir 2'],r:1500,a:'physique',week:40},
 ];
 
 const QUESTS_DEFAULT = [
@@ -197,27 +236,56 @@ const QUESTS_DEFAULT = [
   {i:'🤸',n:'10 tractions d affilee',d:'Propres, consecutives.',diff:'hard',r:250,a:'physique'},
   {i:'🏃',n:'Courir 20km',d:'En une seule sortie.',diff:'hard',r:400,a:'physique'},
   {i:'🏊',n:'Nager 500m non-stop',d:'Sans s arreter.',diff:'hard',r:280,a:'physique'},
+  {i:'🏔️',n:'Marcher 10km en nature',d:'Dehors, en nature.',diff:'hard',r:320,a:'physique'},
+  {i:'💪',n:'100 pompes en plus',d:'En plus de ton entrainement habituel.',diff:'hard',r:300,a:'physique'},
+  {i:'🤸',n:'100 abdos',d:'En une seule session.',diff:'medium',r:200,a:'physique'},
   {i:'🙏',n:'5 prieres a l heure',d:'Exactement a l heure.',diff:'medium',r:200,a:'spiritualite'},
   {i:'🌙',n:'1h de Coran d un trait',d:'Sans interruption.',diff:'medium',r:200,a:'spiritualite'},
   {i:'🧠',n:'Fiche Islam complete',d:'Un sujet islamique complete.',diff:'easy',r:150,a:'spiritualite'},
   {i:'📖',n:'Memoriser une sourate',d:'Recitee de memoire.',diff:'hard',r:350,a:'spiritualite'},
+  {i:'🤲',n:'1000 dhikr en une journee',d:'1000 repetitions de dhikr.',diff:'medium',r:180,a:'spiritualite'},
   {i:'🥗',n:'Journee nutrition parfaite',d:'Zero sucre, zero grignotage.',diff:'medium',r:180,a:'nutrition'},
   {i:'🍳',n:'Apprendre une nouvelle recette',d:'Cuisine et mange un plat nouveau.',diff:'easy',r:120,a:'nutrition'},
+  {i:'🥗',n:'Cuisiner tous ses repas',d:'Toi-meme, toute la journee.',diff:'medium',r:170,a:'nutrition'},
   {i:'💬',n:'Discussion islamique',d:'Echange serieux sur un sujet islamique.',diff:'medium',r:170,a:'social'},
   {i:'🤝',n:'Parler a un inconnu',d:'Vraie conversation.',diff:'medium',r:200,a:'social'},
   {i:'💌',n:'Message de gratitude',d:'Message sincere a quelqu un.',diff:'easy',r:100,a:'social'},
+  {i:'📞',n:'Appel d un ami perdu de vue',d:'Non contacte depuis 1 mois minimum.',diff:'easy',r:100,a:'social'},
+  {i:'⚔️',n:'Le 10 Inconnus',d:'Parler a 10 inconnus dans la meme journee.',diff:'hard',r:400,a:'social'},
+  {i:'🙅',n:'Le Rejet',d:'Provoquer 5 refus volontairement.',diff:'hard',r:350,a:'social'},
+  {i:'👁️',n:'Le Regard',d:'Maintenir contact visuel toute la journee.',diff:'medium',r:220,a:'social'},
+  {i:'🗣️',n:'Parler en public',d:'Devant un groupe, meme petit.',diff:'hard',r:350,a:'social'},
+  {i:'🤝',n:'Aider quelqu un sans rien attendre',d:'Un acte concret et gratuit.',diff:'easy',r:130,a:'social'},
   {i:'🧊',n:'Douche froide 5min',d:'5 min eau froide.',diff:'medium',r:150,a:'mental'},
-  {i:'🌅',n:'Lever avant 6h',d:'Sans telephone 1h.',diff:'medium',r:200,a:'discipline'},
+  {i:'🤫',n:'Journee sans parole inutile',d:'Parler uniquement quand c est utile.',diff:'hard',r:280,a:'mental'},
+  {i:'🧘',n:'20min meditation',d:'Pleine conscience.',diff:'medium',r:160,a:'mental'},
+  {i:'🪑',n:'1h assis sans bouger',d:'En silence, sans distraction.',diff:'hard',r:250,a:'mental'},
+  {i:'🗺️',n:'Aller dans endroit inconnu seul',d:'Rester 1h dans un lieu inconnu.',diff:'medium',r:200,a:'mental'},
+  {i:'🚶',n:'Marcher 2h sans destination',d:'Partir sans but precis.',diff:'medium',r:170,a:'mental'},
+  {i:'☕',n:'Cafe seul sans distraction',d:'Sans telephone ni musique.',diff:'medium',r:180,a:'mental'},
+  {i:'🌅',n:'Lever avant 6h',d:'Sans telephone 1h apres.',diff:'medium',r:200,a:'discipline'},
+  {i:'🚶',n:'Marche 5km sans telephone',d:'5km, telephone a la maison.',diff:'medium',r:180,a:'discipline'},
   {i:'🛏️',n:'Au lit avant 22h',d:'Couche avant 22h.',diff:'easy',r:130,a:'discipline'},
   {i:'📵',n:'Pas de telephone la journee',d:'Aucun telephone pendant tout le jour.',diff:'hard',r:300,a:'discipline'},
-  {i:'🧘',n:'20min meditation',d:'Pleine conscience.',diff:'medium',r:160,a:'mental'},
+  {i:'🔇',n:'3h sans telephone',d:'3 heures productives.',diff:'medium',r:180,a:'discipline'},
+  {i:'🌿',n:'Journee sans reseaux',d:'Instagram, TikTok - off 24h.',diff:'hard',r:280,a:'discipline'},
   {i:'✍️',n:'Lettre a ton futur toi',d:'Ecris a toi-meme dans 1 an.',diff:'easy',r:120,a:'intelligence'},
   {i:'📚',n:'Lire 30 pages',d:'En session continue.',diff:'easy',r:130,a:'intelligence'},
-  {i:'🎯',n:'3 objectifs du mois',d:'Precis et mesurables.',diff:'easy',r:120,a:'execution'},
-  {i:'🔇',n:'3h sans telephone',d:'3 heures productives.',diff:'medium',r:180,a:'discipline'},
-  {i:'🎨',n:'Creer quelque chose',d:'Dessine, ecris, code, compose.',diff:'medium',r:180,a:'intelligence'},
-  {i:'🌿',n:'Journee sans reseaux',d:'Instagram, TikTok - off 24h.',diff:'hard',r:280,a:'discipline'},
-  {i:'📊',n:'Analyser 5 parties d echecs',d:'Parties perdues, analysees.',diff:'medium',r:180,a:'intelligence'},
+  {i:'📊',n:'Analyser 5 parties d echecs',d:'Parties perdues, analysees proprement.',diff:'medium',r:180,a:'intelligence'},
+  {i:'✍️',n:'Fiche de revision complete',d:'Sur un sujet appris recemment.',diff:'easy',r:140,a:'intelligence'},
+  {i:'📝',n:'Reviser 200 mots arabes',d:'Repetition espacee sur la journee.',diff:'medium',r:200,a:'intelligence'},
+  {i:'📚',n:'Resumer un concept complexe',d:'Avec tes propres mots, par ecrit.',diff:'medium',r:170,a:'intelligence'},
+  {i:'🎓',n:'Enseigner un sujet a voix haute',d:'Expliquer comme si tu enseignais quelqu un.',diff:'medium',r:180,a:'intelligence'},
+  {i:'✍️',n:'Texte honnete sur toi-meme',d:'Ecrire honnement sur toi, tes forces et defauts.',diff:'medium',r:180,a:'intelligence'},
+  {i:'🎯',n:'3 objectifs du mois',d:'Precis, mesurables, ecrits.',diff:'easy',r:120,a:'execution'},
+  {i:'🧹',n:'Desencombrement',d:'Donner ou jeter 10 objets inutiles.',diff:'easy',r:100,a:'execution'},
+  {i:'🎨',n:'Creer quelque chose',d:'Dessine, ecris, code ou compose.',diff:'medium',r:180,a:'execution'},
+  {i:'🔧',n:'Reparer quelque chose',d:'Reparer ou ameliorer un objet chez toi.',diff:'medium',r:180,a:'execution'},
+  {i:'🎯',n:'Definir ce que tu veux devenir',d:'Ecrire exactement la personne que tu veux etre.',diff:'easy',r:160,a:'execution'},
+  {i:'🧠',n:'Identifier 3 defauts reels',d:'Tes 3 plus gros defauts actuels, par ecrit.',diff:'easy',r:140,a:'execution'},
+  {i:'📋',n:'Planifier sa semaine entiere',d:'Le dimanche soir, ecrire objectifs et planning.',diff:'easy',r:120,a:'execution'},
+  {i:'🗺️',n:'Explorer un endroit nouveau',d:'Un lieu jamais visite.',diff:'easy',r:120,a:'social'},
+  {i:'📋',n:'Trier et organiser ses notes',d:'Organiser et purger tes notes digitales.',diff:'easy',r:80,a:'execution'},
 ];
 
 const BONUSES_DEFAULT = [
@@ -231,8 +299,16 @@ const BONUSES_DEFAULT = [
   {e:'✈️',n:'Sortie / voyage',c:3000,cond:'Rang >= S',mr:5},
   {e:'🎉',n:'Soiree entre amis',c:400,cond:'Rang >= D',mr:1},
   {e:'🍔',n:'Fast food',c:200,cond:'Journee >= 8/10',mr:0},
+  {e:'🎧',n:'Acheter un album / musique',c:300,cond:'Rang >= D',mr:1},
   {e:'📚',n:'Acheter un livre',c:200,cond:'Rang >= E',mr:0},
   {e:'🎯',n:'Journee totalement libre',c:500,cond:'Semaine parfaite',mr:0},
+  {e:'🏖️',n:'Week-end relax',c:1000,cond:'Rang >= B',mr:3},
+  {e:'🎲',n:'Soiree jeux avec amis',c:300,cond:'Rang >= D',mr:1},
+  {e:'🍦',n:'Dessert / glace',c:150,cond:'Journee >= 8/10',mr:0},
+  {e:'💆',n:'Massage / spa',c:700,cond:'Rang >= C',mr:2},
+  {e:'🎁',n:'Se faire un cadeau',c:1200,cond:'Rang >= B',mr:3},
+  {e:'🍷',n:'Repas gastronomique',c:900,cond:'Rang >= A',mr:4},
+  {e:'🏋️',n:'Abonnement salle / equipement',c:600,cond:'Rang >= C',mr:2},
 ];
 
 const MALUSES_DEFAULT = [
@@ -244,21 +320,37 @@ const MALUSES_DEFAULT = [
   {e:'🎬',n:'Serie non meritee',c:300},
   {e:'🍔',n:'Fast food non merite',c:350},
   {e:'😴',n:'Grasse matinee non meritee',c:250},
+  {e:'🍦',n:'Dessert non merite',c:200},
+  {e:'🎧',n:'Musique pour procrastiner',c:150},
   {e:'📺',n:'YouTube en boucle',c:300},
   {e:'🛍️',n:'Shopping impulsif',c:800},
+  {e:'🍷',n:'Sortie non meritee',c:600},
   {e:'😪',n:'Rater son reveil',c:200},
+  {e:'🚗',n:'Trajet faisable a pied pris en transport',c:150},
+  {e:'🍫',n:'Grignotage sucre non merite',c:180},
+  {e:'🎯',n:'Journee sans rien faire',c:400},
   {e:'📵',n:'Rater ses prieres',c:250},
   {e:'🧠',n:'Journee sans apprendre',c:200},
+  {e:'⏰',n:'Arriver en retard par manque de discipline',c:150},
 ];
 
 const SKILLS_DATA_DEFAULT = [
-  {cat:'Calisthenics',icon:'💪',items:['Faire 1 muscle-up strict','Faire 5 muscle-ups consecutifs','Tenir un front lever 5 secondes','Tenir handstand 10s contre mur','Tenir un handstand libre 5 secondes','Faire 20 tractions strictes','Faire 50 pompes consecutives','Realiser un backflip depuis le sol','Realiser un frontflip depuis le sol']},
-  {cat:'Endurance',icon:'🏃',items:['Courir 5km sans arreter','Courir 10km en moins d 1h','Courir un semi-marathon 21km','Finir un marathon 42km','Nager 1km en continu','Marcher 30km en une journee','Atteindre 10 000 pas par jour 30j']},
-  {cat:'Force',icon:'🏋️',items:['Squatter 1x son propre poids','100 pompes en une journee','100 tractions en une journee','200 abdos en une session']},
-  {cat:'Echecs',icon:'♟️',items:['Atteindre 1200 Elo en ligne','Atteindre 1500 Elo en ligne','Atteindre 1800 Elo en ligne','Atteindre 2000 Elo en ligne','Maitriser l ouverture italienne','Resoudre 500 puzzles tactiques']},
-  {cat:'Coran et Islam',icon:'🕌',items:['Memoriser Al-Fatiha parfaitement','Memoriser Juz Amma complet 30e','Memoriser les 10 dernieres sourates','Memoriser Ayat Al-Kursi','Lire le Coran entier une fois','Apprendre le Tajwid basique','Connaitre les 5 piliers en detail','Connaitre 50 hadiths Nawawi']},
-  {cat:'Langue Arabe',icon:'🗣️',items:['Apprendre l alphabet arabe complet','Lire des mots arabes sans voyelles','Apprendre 500 mots de vocabulaire','Apprendre 1000 mots de vocabulaire','Tenir une conversation de 5 min en arabe']},
-  {cat:'Code et Tech',icon:'💻',items:['Creer une page web HTML CSS complete','Rendre un site responsive mobile','Creer un script JavaScript fonctionnel','Deployer un site sur GitHub Pages','Ecrire un script Python de base']},
-  {cat:'Cuisine',icon:'🍳',items:['Cuisiner un poulet roti entier','Calculer ses macros journalieres','Preparer ses repas pour la semaine','Cuisiner sans huile saturee pendant 30j']},
-  {cat:'Mental',icon:'🧘',items:['Mediter 10 min pendant 30j consecutifs','Tenir un journal pendant 60 jours','Pratiquer le stoicisme 30j journaling','Resister a une habitude negative 30j']},
+  {cat:'Calisthenics',icon:'💪',items:['Faire 1 muscle-up strict','Faire 5 muscle-ups consecutifs','Tenir un front lever 5 secondes','Tenir un back lever 5 secondes','Faire un human flag 3 secondes','Tenir handstand 10s contre mur','Tenir un handstand libre 5 secondes','Faire un handstand push-up','Faire 20 tractions strictes','Faire 10 tractions a une main assistee','Faire 50 pompes consecutives','Faire des pompes diamant x30','Faire des archer push-ups x10 par cote','Tenir un L-sit 10 secondes au sol','Tenir un L-sit 5 secondes aux barres','Faire 20 dips aux barres paralleles','Faire un planche lean 3 secondes','Faire 10 pike push-ups','Realiser un backflip depuis le sol','Realiser un frontflip depuis le sol']},
+  {cat:'Endurance & Course',icon:'🏃',items:['Courir 5km sans arreter','Courir 10km en moins d 1h','Courir un semi-marathon 21km','Finir un marathon 42km','Courir 5km en moins de 22 min','Faire 100 burpees en moins de 10 min','Nager 1km en continu','Nager 2km en continu','Faire 1000 sauts a la corde en continu','Marcher 30km en une journee','Marcher 50km en une journee','Faire du velo 50km en une sortie','Atteindre 10 000 pas par jour 30j','Faire 200 squats en une session','Faire une seance HIIT 20 min sans pause']},
+  {cat:'Force & Musculation',icon:'🏋️',items:['Squatter 1x son propre poids de corps','Developpe couche 1x son poids de corps','Souleve de terre 1.5x son poids','10 repetitions squat avec 80kg','10 repetitions developpe couche 70kg','Overhead press avec 60kg','Bulgarian split squats x15 par jambe','Hip thrust avec charge maitrise','Face pulls correctement executes','Romanian deadlift technique propre','Faire 100 pompes en une journee','Faire 100 squats en une session','Faire 100 tractions en une journee','Faire 200 abdos en une session','Realiser programme 100 pompes en 6 semaines']},
+  {cat:'Mobilite & Souplesse',icon:'🤸',items:['Toucher ses orteils jambes tendues','Faire le grand ecart complet','Faire le pont wheel pose complet','Tenir posture du pigeon 2 min par cote','Rotation complete des epaules','Maitriser le squat profond ass to grass','Tenir la posture du lotus complet','Rotations de hanches completes','Maitriser les etirements du psoas','Tenir la posture du scorpion']},
+  {cat:'Arts Martiaux & Grappling',icon:'🥊',items:['Apprendre la chute arriere ukemi','Apprendre la chute avant','Maitriser la prise de garde boxe','Realiser un takedown double jambe','Maitriser le rear naked choke','Passer la garde en grappling','Faire un armbar depuis la garde','Maitriser le triangle choke','Faire un hip throw o-goshi propre','Tenir 3 min de sparring debout','Tenir 5 min de roulage BJJ','Maitriser le croc-en-jambe','Defense contre une cle de bras','Sortir d un etranglement arriere','Connaitre 5 positions de controle au sol']},
+  {cat:'Natation',icon:'🏊',items:['Nager le crawl sur 25m technique propre','Nager le dos crawle sur 50m','Nager la brasse sur 100m sans pause','Nager le papillon sur 25m','Apprendre le virage culbute flip turn','Nager en apnee 25m sous l eau','Sauver quelqu un qui se noie','Plonger depuis 5m de hauteur','Nager en eau libre 500m','Tenir l eau 10 min sans bouger les bras']},
+  {cat:'Echecs',icon:'♟️',items:['Atteindre 1200 Elo en ligne','Atteindre 1500 Elo en ligne','Atteindre 1800 Elo en ligne','Atteindre 2000 Elo en ligne','Maitriser l ouverture italienne','Maitriser la defense sicilienne','Maitriser l attaque espagnole','Connaitre 10 fins de partie theoriques','Analyser 50 parties perdues','Resoudre 500 puzzles tactiques','Maitriser le mat du couloir','Maitriser le mat des 2 tours','Apprendre la methode Silman pour finales','Jouer en blitz 3min avec confiance','Jouer en bullet 1min regulierement']},
+  {cat:'Coran & Islam',icon:'🕌',items:['Memoriser Al-Fatiha parfaitement','Memoriser Juz Amma complet 30e','Memoriser les 10 dernieres sourates','Memoriser Ayat Al-Kursi','Memoriser Al-Baqarah 10 premiers versets','Lire le Coran entier une fois','Apprendre le Tajwid basique','Apprendre les regles de la madd','Apprendre les regles du ghunna','Comprendre 300 mots arabes coraniques','Apprendre 20 douas essentielles','Connaitre les 5 piliers en detail','Connaitre les 6 piliers de la foi','Connaitre les regles de la priere','Apprendre les ablutions woudou','Connaitre les regles de purification','Apprendre les regles du jeune Ramadan','Connaitre 50 hadiths Nawawi','Connaitre la Sira du Prophete en resume','Apprendre les 99 noms d Allah et leur sens']},
+  {cat:'Langue Arabe',icon:'🗣️',items:['Apprendre l alphabet arabe complet','Lire des mots arabes sans voyelles','Ecrire l alphabet arabe en cursive','Apprendre 500 mots de vocabulaire courant','Apprendre 1000 mots de vocabulaire','Comprendre une conversation simple','Tenir une conversation de 5 min en arabe','Connaitre les regles de base de la grammaire','Maitriser les conjugaisons au passe madi','Maitriser les conjugaisons au present mudari','Apprendre les pronoms personnels arabes','Comprendre un extrait de journal arabe','Regarder une video en arabe et comprendre 70%','Ecrire un paragraphe en arabe de sa tete','Connaitre les racines triliteres communes']},
+  {cat:'Code & Tech',icon:'💻',items:['Creer une page web HTML CSS complete','Rendre un site responsive mobile','Creer une animation CSS','Ecrire un script JavaScript fonctionnel','Creer un formulaire avec validation JS','Utiliser l API fetch pour afficher des donnees','Deployer un site sur GitHub Pages','Creer un repo GitHub et faire des commits','Utiliser VS Code avec extensions utiles','Ecrire un script Python de base','Automatiser une tache repetitive avec Python','Creer un bot simple Discord ou Telegram','Comprendre ce qu est une API REST','Creer et lire un fichier JSON en Python','Manipuler des donnees avec pandas','Faire un graphique avec matplotlib','Comprendre les bases de SQL','Faire une requete SELECT JOIN WHERE','Creer une base de donnees SQLite','Utiliser l IA pour coder efficacement']},
+  {cat:'Mecanique & Bricolage',icon:'⚙️',items:['Changer une roue de voiture seul','Verifier et faire l appoint d huile moteur','Changer les plaquettes de frein','Lire un plan de montage complexe','Visser un chevron dans un mur porteur','Installer une prise electrique','Remplacer un robinet qui fuit','Lire un multimetre electrique','Souder deux fils electriques proprement','Demonter et remonter un velo complet','Changer une chambre a air de velo','Comprendre un schema electrique simple','Monter un meuble complexe IKEA avance','Percer et fixer une etagere au mur','Peindre une piece proprement']},
+  {cat:'Cuisine & Nutrition',icon:'🍳',items:['Cuisiner un poulet roti entier','Preparer une sauce bechamel maison','Faire du pain maison sans machine','Preparer des sushis maison','Cuisiner un tajine complet','Preparer des maklouba riz arabe renverse','Faire du hummus maison','Calculer ses macros journalieres','Preparer ses repas pour la semaine meal prep','Cuisiner sans huile saturee pendant 30j','Lire et comprendre une etiquette nutritionnelle','Calculer ses besoins caloriques de maintenance','Faire un plan alimentaire pour prise de masse','Faire un plan alimentaire pour seche','Maitriser la cuisson des oeufs toutes formes']},
+  {cat:'Finance & Business',icon:'💰',items:['Creer un budget mensuel personnel','Epargner 10% de ses revenus pendant 3 mois','Ouvrir un livret d epargne','Comprendre ce qu est un ETF','Investir pour la premiere fois meme 50 euros','Comprendre la difference actions obligations','Lire un bilan comptable simple','Creer une micro-entreprise en ligne','Vendre quelque chose en ligne','Negocier un prix ou un salaire','Creer une offre de service claire','Comprendre les charges sociales en France','Comprendre ce qu est la TVA','Faire une declaration de revenus seul','Comprendre l interet compose et le calculer']},
+  {cat:'Survie & Autonomie',icon:'🧭',items:['Allumer un feu sans briquet silex ou friction','S orienter avec une boussole','Lire une carte topographique','Filtrer de l eau en nature','Construire un abri d urgence en foret','Faire un noeud de chaise bowline','Faire un noeud de cabestan','Reconnaitre 10 plantes comestibles locales','Reconnaitre 5 plantes toxiques locales','Faire un garrot d urgence','Pratiquer le RCP reanimation cardio-pulmonaire','Poser un bandage propre sur une plaie','Identifier les symptomes d hypothermie','Survivre une nuit en plein air sans tente','Trouver le nord sans boussole']},
+  {cat:'Memoire & Apprentissage',icon:'🧠',items:['Memoriser 50 mots etrangers en une semaine','Utiliser la methode des palais de memoire','Memoriser un jeu de 52 cartes dans l ordre','Appliquer la repetition espacee Anki 30j','Memoriser les 44 presidents americains en ordre','Memoriser 50 capitales du monde','Memoriser les tables de multiplication jusqu a 20','Apprendre a lire 2x plus vite','Resumer un livre de 200 pages en 1 page','Retenir le contenu d une conference sans notes']},
+  {cat:'Creation & Expression',icon:'🎨',items:['Dessiner un portrait ressemblant','Dessiner en perspective 1 point de fuite','Apprendre les bases du shading','Ecrire une nouvelle courte 1000 mots','Ecrire un poeme de 3 strophes','Monter une video de 2 min avec musique','Prendre une photo avec la regle des tiers','Maitriser la balance des blancs en photo','Creer un logo simple avec Canva','Composer une beat simple sur GarageBand ou FL']},
+  {cat:'Psychologie & Discipline',icon:'🧘',items:['Mediter 10 min pendant 30j consecutifs','Tenir un journal pendant 60 jours','Completer un challenge 75 Hard','Pratiquer la visualisation positive 30j','Identifier ses 5 biais cognitifs principaux','Pratiquer le stoicisme 30j journaling','Resister a une habitude negative 30j','Apprendre la respiration Wim Hof','Faire une retraite de silence volontaire 1j','Maitriser la technique de box breathing']},
+  {cat:'Culture Generale',icon:'🌍',items:['Connaitre les 195 pays et leur continent','Connaitre les 10 plus grandes economies mondiales','Comprendre ce qu est l OTAN et ses membres','Comprendre le fonctionnement de l ONU','Connaitre les grandes phases de l Histoire de France','Comprendre les bases de l economie de marche','Connaitre les grandes religions mondiales','Comprendre le fonctionnement d une election presidentielle','Lire 10 livres de non-fiction dans l annee','Regarder 5 documentaires sur sujets inconnus']},
 ];
