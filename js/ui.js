@@ -559,6 +559,69 @@ function renderQuests(today) {
 }
 
 // ── ATTRIBUTS ──
+function getDetailedPASources(attrId) {
+  const sources = {
+    discipline: [
+      '📵 No Scroll → +2 PA Constance · +1 PA Mental/jour',
+      '✅ Journée parfaite → +3 PA Routine · +2 PA Exécution',
+      '🔥 Streak tous les 7j → +8 PA No Scroll · +6 PA Constance',
+      '📅 Chaque jour tracké → +1 PA Constance',
+      '⚔️ Boss Ermite, Vide Total, Réveil → gros bonus Routine',
+    ],
+    physique: [
+      '🏃 Sport → +2 PA Force · +1 PA Endurance/jour',
+      '💪 Pushup → +2 PA Force/jour',
+      '🔥 Combo Sport+Pushup → +3 PA Force · +2 PA Endurance bonus',
+      '✅ Streak 7j → +10 PA Vitesse · Streak 30j → +20 PA',
+      '⚔️ Boss Centurion, Marathon, Nageur → +PA Technique/Endurance',
+    ],
+    nutrition: [
+      '🥗 Nutrition → +3 PA Qualité repas/jour',
+      '🔥 Combo No Scroll+Nutrition → +2 PA Qualité bonus',
+      '⚔️ Boss Abstinent Total → +PA Qualité · Composition',
+      '📜 Quête nutrition parfaite → +PA Qualité · Cuisinier',
+      '🧠 Skills Cuisine → +80 PA répartis sur Cuisinier · Connaissance',
+    ],
+    spiritualite: [
+      '🙏 Prière → +3 PA Salat/jour',
+      '📖 Coran → +3 PA Coran/jour',
+      '🕌 Islam → +2 PA Connaissance/jour',
+      '🔥 Combo Coran+Prière+Islam → +4 PA Salat · +4 PA Coran · +3 PA Ilm · +2 PA Dhikr',
+      '⚔️ Boss Moine, Retraite Spirituelle, Récitation → gros bonus Dhikr · Coran',
+    ],
+    intelligence: [
+      '🗣️ Arabe → +3 PA Arabe/jour',
+      '🧠 Skill → +2 PA Compétences/jour',
+      '♟️ Chess → +3 PA Échecs/jour',
+      '🔥 Combo Arabe+Chess+Skill → +3 PA Arabe · +3 PA Échecs · +2 PA Skill · +2 PA Mémoire',
+      '⚔️ Boss Polyglotte, Arabophone, Conquerant → gros bonus Arabe · Échecs',
+      '🧠 Skills Échecs, Arabe, Mémoire → +80 PA chacun',
+    ],
+    mental: [
+      '📵 No Scroll → +1 PA Gestion ennui/jour',
+      '✅ Journée parfaite → +2 PA Impulsions · +1 PA Stabilité',
+      '🔥 Streak 7j → +8 PA Impulsions · +4 PA Stabilité',
+      '🔥 Combo No Scroll+Nutrition → +2 PA Impulsions bonus',
+      '⚔️ Boss Silence, Bain de Glace, Immersion, Stoïque → bonus Résistance · Stabilité',
+    ],
+    social: [
+      '📜 Quêtes Social → +PA répartis sur Aisance · Communication',
+      '⚔️ Boss Invisible Social, Exposé, Assertif, Leader → +PA Aisance · Présence',
+      '✅ Journées parfaites consécutives → +PA Confiance indirect',
+      '💡 Cet attribut se développe principalement via boss et quêtes Social',
+    ],
+    execution: [
+      '📅 Chaque jour ≥ 7/10 → +1 PA Constance',
+      '✅ Journée parfaite → +3 PA Priorisation · +5 PA Vitesse',
+      '🔥 Streak 7j → +10 PA Vitesse · +8 PA Constance',
+      '🔥 Streak 30j → +20 PA Vitesse · +15 PA Constance',
+      '⚔️ Boss Tireur, Leader → +PA Finir · Priorisation',
+      '💡 Cet attribut se développe surtout par la régularité et les boss',
+    ],
+  };
+  const lines = sources[attrId] || [];
+  return lines.map(l => `<div style="padding:1px 0;">• ${l}</div>`).join('');
+}
 function renderAttr() {
   const { attr, sub } = computeAttrPA();
   document.getElementById('attr-grid').innerHTML = ATTRIBUTES.map(a => {
@@ -595,9 +658,14 @@ function renderAttr() {
           </div>`;
         }).join('')}
       </div>
-      <div style="background:var(--surface2);border-radius:9px;padding:.52rem .75rem;font-size:.65rem;color:var(--text2);margin-bottom:6px;line-height:1.75;">
-        <strong style="color:var(--text);">Sources PA :</strong><br>
-        Habitudes quotidiennes · Boss vaincus <strong style="color:#a78bfa;">+${paFromBoss} PA</strong> · Quêtes <strong style="color:#fbbf24;">+${paFromQuests} PA</strong> · Skills <strong style="color:#4ade80;">+${paFromSkills} PA</strong>
+      <div style="background:var(--surface2);border-radius:9px;padding:.52rem .75rem;font-size:.65rem;color:var(--text2);margin-bottom:6px;line-height:1.9;">
+        <strong style="color:var(--text);">Sources PA — ${a.name} :</strong><br>
+        ${getDetailedPASources(a.id)}
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap;">
+          <span>⚔️ Boss : <strong style="color:#a78bfa;">+${paFromBoss} PA</strong></span>
+          <span>📜 Quêtes : <strong style="color:#fbbf24;">+${paFromQuests} PA</strong></span>
+          <span>🧠 Skills : <strong style="color:#4ade80;">+${paFromSkills} PA</strong></span>
+        </div>
       </div>
       ${nextAction ? `<div class="attr-next-action">→ ${nextAction}</div>` : ''}
       <div class="attr-goal">🎯 <strong>Objectif :</strong> ${a.goal}</div>
@@ -795,6 +863,96 @@ function renderGuide() {
   const xp=computeXP(); const {sub}=computeAttrPA();
   const totalPA=Object.values(sub).reduce((a,b)=>a+b,0);
   document.getElementById('guide-content').innerHTML = `
+    <div style="font-size:1rem;font-weight:700;margin-bottom:.8rem;">📖 Guide du Système</div>
+
+    <div class="guide-section"><h3>🏆 Points de Discipline (PD) — Rang annuel</h3>
+      <table class="guide-table">
+        <tr><th>Source</th><th>PD</th></tr>
+        <tr><td>1 habitude cochée</td><td><span class="guide-chip pd-chip">+10 PD</span></td></tr>
+        <tr><td>Journée parfaite 10/10</td><td><span class="guide-chip pd-chip">+150 PD bonus</span></td></tr>
+        <tr><td>Tous les 7 jours parfaits consécutifs</td><td><span class="guide-chip pd-chip">+300 PD</span></td></tr>
+        <tr><td>Exactement 30 jours parfaits consécutifs</td><td><span class="guide-chip pd-chip">+1 000 PD bonus</span></td></tr>
+        <tr><td>Exactement 100 jours parfaits consécutifs</td><td><span class="guide-chip pd-chip">+5 000 PD bonus</span></td></tr>
+        <tr><td>Boss Commune vaincu</td><td><span class="guide-chip pd-chip">+400–500 PD</span></td></tr>
+        <tr><td>Boss Rare vaincu</td><td><span class="guide-chip pd-chip">+500–700 PD</span></td></tr>
+        <tr><td>Boss Épique vaincu</td><td><span class="guide-chip pd-chip">+700–950 PD</span></td></tr>
+        <tr><td>Boss Légendaire vaincu</td><td><span class="guide-chip pd-chip">+900–1 500 PD</span></td></tr>
+        <tr><td>Boss Mythique vaincu</td><td><span class="guide-chip pd-chip">+1 500–2 000 PD</span></td></tr>
+        <tr><td>Quête Facile validée</td><td><span class="guide-chip pd-chip">+80–150 PD</span></td></tr>
+        <tr><td>Quête Moyenne validée</td><td><span class="guide-chip pd-chip">+150–220 PD</span></td></tr>
+        <tr><td>Quête Difficile validée</td><td><span class="guide-chip pd-chip">+220–400 PD</span></td></tr>
+        <tr><td>Malus / Boutique</td><td><span class="guide-chip" style="background:rgba(248,113,113,.12);color:#f87171;">-PD</span></td></tr>
+      </table>
+      <div style="margin-top:.8rem;padding:.65rem .8rem;background:var(--surface2);border-radius:8px;font-size:.7rem;color:var(--text2);">
+        📊 Ton solde : <strong>${xp.toLocaleString()} PD</strong> · Rang <strong>${getRank(xp).e} ${getRank(xp).n}</strong>
+      </div>
+    </div>
+
+    <div class="guide-section"><h3>⚔️ Points Attribut (PA) — 3 sources</h3>
+      <table class="guide-table">
+        <tr><th>Source</th><th>PA</th></tr>
+        <tr><td>Habitudes quotidiennes</td><td><span class="guide-chip pa-chip">2–3 PA/jour selon habitude</span></td></tr>
+        <tr><td>Combo physique (Sport + Pushup)</td><td><span class="guide-chip pa-chip">+5 PA Physique bonus</span></td></tr>
+        <tr><td>Combo spirituel (Coran + Prière + Islam)</td><td><span class="guide-chip pa-chip">+13 PA Spiritualité bonus</span></td></tr>
+        <tr><td>Combo intellectuel (Arabe + Chess + Skill)</td><td><span class="guide-chip pa-chip">+10 PA Intelligence bonus</span></td></tr>
+        <tr><td>Combo discipline (No Scroll + Nutrition)</td><td><span class="guide-chip pa-chip">+6 PA bonus</span></td></tr>
+        <tr><td>Boss Commune vaincu</td><td><span class="guide-chip pa-chip">+60 PA</span></td></tr>
+        <tr><td>Boss Rare vaincu</td><td><span class="guide-chip pa-chip">+130 PA</span></td></tr>
+        <tr><td>Boss Épique vaincu</td><td><span class="guide-chip pa-chip">+220 PA</span></td></tr>
+        <tr><td>Boss Légendaire vaincu</td><td><span class="guide-chip pa-chip">+350 PA</span></td></tr>
+        <tr><td>Boss Mythique vaincu</td><td><span class="guide-chip pa-chip">+500 PA</span></td></tr>
+        <tr><td>Quête Facile</td><td><span class="guide-chip pa-chip">+30 PA</span></td></tr>
+        <tr><td>Quête Moyenne</td><td><span class="guide-chip pa-chip">+60 PA</span></td></tr>
+        <tr><td>Quête Difficile</td><td><span class="guide-chip pa-chip">+100 PA</span></td></tr>
+        <tr><td>Skill maîtrisé</td><td><span class="guide-chip pa-chip">+80 PA</span></td></tr>
+      </table>
+      <div style="margin-top:.8rem;padding:.65rem .8rem;background:var(--surface2);border-radius:8px;font-size:.7rem;color:var(--text2);">
+        📊 Tes PA totaux : <strong>${totalPA.toLocaleString()} PA</strong>
+      </div>
+    </div>
+
+    <div class="guide-section"><h3>📅 Temps estimé pour atteindre chaque rang</h3>
+      <table class="guide-table">
+        <tr><th>Rang</th><th>PD requis</th><th>Moyen 7/10</th><th>Sérieux 9/10</th><th>Parfait 10/10</th></tr>
+        <tr><td>🪨 E → 🛡️ D</td><td>2 000</td><td>~29j</td><td>~22j</td><td>~8j</td></tr>
+        <tr><td>🛡️ D → ⚔️ C</td><td>6 000</td><td>~86j</td><td>~67j</td><td>~24j</td></tr>
+        <tr><td>⚔️ C → 🏹 B</td><td>14 000</td><td>~200j</td><td>~156j</td><td>~56j</td></tr>
+        <tr><td>🏹 B → 🔥 A</td><td>28 000</td><td>~400j</td><td>~311j</td><td>~112j</td></tr>
+        <tr><td>🔥 A → 💎 S</td><td>50 000</td><td>~714j</td><td>~556j</td><td>~200j</td></tr>
+        <tr><td>💎 S → 👑 SS</td><td>80 000</td><td>~2.5ans</td><td>~2ans</td><td>~320j</td></tr>
+        <tr><td>👑 SS → ⭐ SSS</td><td>120 000</td><td>~3.5ans</td><td>~2.7ans</td><td>~480j</td></tr>
+      </table>
+      <div style="margin-top:.8rem;padding:.65rem .8rem;background:var(--surface2);border-radius:8px;font-size:.7rem;color:var(--text2);">
+        💡 Avec boss + quêtes réguliers : accélération de 50–70%. Profil Moyen = 7 habitudes/jour en moyenne. Profil Parfait = 10/10 chaque jour.
+      </div>
+    </div>
+
+    <div class="guide-section"><h3>🔥 Combos quotidiens</h3>
+      <table class="guide-table">
+        <tr><th>Combo</th><th>Condition</th><th>Bonus PA</th></tr>
+        <tr><td>💪 Combo Physique</td><td>Sport + Pushup le même jour</td><td><span class="guide-chip pa-chip">+5 PA Force/Endurance</span></td></tr>
+        <tr><td>🌙 Combo Spirituel</td><td>Coran + Prière + Islam le même jour</td><td><span class="guide-chip pa-chip">+13 PA Spiritualité</span></td></tr>
+        <tr><td>🧠 Combo Intellectuel</td><td>Arabe + Chess + Skill le même jour</td><td><span class="guide-chip pa-chip">+10 PA Intelligence</span></td></tr>
+        <tr><td>⚔️ Combo Discipline</td><td>No Scroll + Nutrition le même jour</td><td><span class="guide-chip pa-chip">+6 PA Discipline/Mental</span></td></tr>
+      </table>
+    </div>
+
+    <div class="guide-section"><h3>📊 Habitudes → PA détaillés</h3>
+      <table class="guide-table">
+        <tr><th>Habitude</th><th>PA par jour</th><th>Attribut</th></tr>
+        <tr><td>🏃 Sport</td><td><span class="guide-chip pa-chip">+2 Force · +1 Endurance</span></td><td>Physique</td></tr>
+        <tr><td>💪 Pushup</td><td><span class="guide-chip pa-chip">+2 Force</span></td><td>Physique</td></tr>
+        <tr><td>🥗 Nutrition</td><td><span class="guide-chip pa-chip">+3 Qualité repas</span></td><td>Nutrition</td></tr>
+        <tr><td>🙏 Prière</td><td><span class="guide-chip pa-chip">+3 Salat</span></td><td>Spiritualité</td></tr>
+        <tr><td>📖 Coran</td><td><span class="guide-chip pa-chip">+3 Coran</span></td><td>Spiritualité</td></tr>
+        <tr><td>🕌 Islam</td><td><span class="guide-chip pa-chip">+2 Connaissance</span></td><td>Spiritualité</td></tr>
+        <tr><td>🗣️ Arabe</td><td><span class="guide-chip pa-chip">+3 Arabe</span></td><td>Intelligence</td></tr>
+        <tr><td>🧠 Skill</td><td><span class="guide-chip pa-chip">+2 Compétences</span></td><td>Intelligence</td></tr>
+        <tr><td>♟️ Chess</td><td><span class="guide-chip pa-chip">+3 Échecs</span></td><td>Intelligence</td></tr>
+        <tr><td>📵 No Scroll</td><td><span class="guide-chip pa-chip">+2 No Scroll · +1 Gestion ennui</span></td><td>Discipline + Mental</td></tr>
+      </table>
+    </div>`;
+}
     <div style="font-size:1rem;font-weight:700;margin-bottom:.8rem;">📖 Guide du Système</div>
     <div class="guide-section"><h3>🏆 Points de Discipline (PD) — Rang annuel</h3>
       <table class="guide-table">
