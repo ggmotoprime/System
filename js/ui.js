@@ -559,6 +559,69 @@ function renderQuests(today) {
 }
 
 // ── ATTRIBUTS ──
+function getDetailedPASources(attrId) {
+  const sources = {
+    discipline: [
+      '📵 No Scroll → +2 PA Constance · +1 PA Mental/jour',
+      '✅ Journée parfaite → +3 PA Routine · +2 PA Exécution',
+      '🔥 Streak tous les 7j → +8 PA No Scroll · +6 PA Constance',
+      '📅 Chaque jour tracké → +1 PA Constance',
+      '⚔️ Boss Ermite, Vide Total, Réveil → gros bonus Routine',
+    ],
+    physique: [
+      '🏃 Sport → +2 PA Force · +1 PA Endurance/jour',
+      '💪 Pushup → +2 PA Force/jour',
+      '🔥 Combo Sport+Pushup → +3 PA Force · +2 PA Endurance bonus',
+      '✅ Streak 7j → +10 PA Vitesse · Streak 30j → +20 PA',
+      '⚔️ Boss Centurion, Marathon, Nageur → +PA Technique/Endurance',
+    ],
+    nutrition: [
+      '🥗 Nutrition → +3 PA Qualité repas/jour',
+      '🔥 Combo No Scroll+Nutrition → +2 PA Qualité bonus',
+      '⚔️ Boss Abstinent Total → +PA Qualité · Composition',
+      '📜 Quête nutrition parfaite → +PA Qualité · Cuisinier',
+      '🧠 Skills Cuisine → +80 PA répartis sur Cuisinier · Connaissance',
+    ],
+    spiritualite: [
+      '🙏 Prière → +3 PA Salat/jour',
+      '📖 Coran → +3 PA Coran/jour',
+      '🕌 Islam → +2 PA Connaissance/jour',
+      '🔥 Combo Coran+Prière+Islam → +4 PA Salat · +4 PA Coran · +3 PA Ilm · +2 PA Dhikr',
+      '⚔️ Boss Moine, Retraite Spirituelle, Récitation → gros bonus Dhikr · Coran',
+    ],
+    intelligence: [
+      '🗣️ Arabe → +3 PA Arabe/jour',
+      '🧠 Skill → +2 PA Compétences/jour',
+      '♟️ Chess → +3 PA Échecs/jour',
+      '🔥 Combo Arabe+Chess+Skill → +3 PA Arabe · +3 PA Échecs · +2 PA Skill · +2 PA Mémoire',
+      '⚔️ Boss Polyglotte, Arabophone, Conquerant → gros bonus Arabe · Échecs',
+      '🧠 Skills Échecs, Arabe, Mémoire → +80 PA chacun',
+    ],
+    mental: [
+      '📵 No Scroll → +1 PA Gestion ennui/jour',
+      '✅ Journée parfaite → +2 PA Impulsions · +1 PA Stabilité',
+      '🔥 Streak 7j → +8 PA Impulsions · +4 PA Stabilité',
+      '🔥 Combo No Scroll+Nutrition → +2 PA Impulsions bonus',
+      '⚔️ Boss Silence, Bain de Glace, Immersion, Stoïque → bonus Résistance · Stabilité',
+    ],
+    social: [
+      '📜 Quêtes Social → +PA répartis sur Aisance · Communication',
+      '⚔️ Boss Invisible Social, Exposé, Assertif, Leader → +PA Aisance · Présence',
+      '✅ Journées parfaites consécutives → +PA Confiance indirect',
+      '💡 Cet attribut se développe principalement via boss et quêtes Social',
+    ],
+    execution: [
+      '📅 Chaque jour ≥ 7/10 → +1 PA Constance',
+      '✅ Journée parfaite → +3 PA Priorisation · +5 PA Vitesse',
+      '🔥 Streak 7j → +10 PA Vitesse · +8 PA Constance',
+      '🔥 Streak 30j → +20 PA Vitesse · +15 PA Constance',
+      '⚔️ Boss Tireur, Leader → +PA Finir · Priorisation',
+      '💡 Cet attribut se développe surtout par la régularité et les boss',
+    ],
+  };
+  const lines = sources[attrId] || [];
+  return lines.map(l => `<div style="padding:1px 0;">• ${l}</div>`).join('');
+}
 function renderAttr() {
   const { attr, sub } = computeAttrPA();
   document.getElementById('attr-grid').innerHTML = ATTRIBUTES.map(a => {
