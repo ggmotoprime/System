@@ -9,14 +9,14 @@ const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b
 const CATEGORIES = {'Tout':null,'Sport':['Sport','Pushup'],'Religion':['Coran','Islam','Priere'],'Apprentissage':['Arabe','Skill','Chess'],'Discipline':['No Scroll','Nutrition']};
 
 const RANKS = [
-  {n:'E — Recrue',    e:'🪨', min:0,      max:2000,    c:'#9ca3af', d:'Le debut.',                        passif:null},
-  {n:'D — Apprenti',  e:'🛡️', min:2000,   max:6000,    c:'#cd7f32', d:'La routine s installe.',           passif:{id:'endurance',  desc:'Les jours 9/10 comptent pour le streak.'}},
-  {n:'C — Chasseur',  e:'⚔️', min:6000,   max:14000,   c:'#a0a0a0', d:'Tu es constant.',                  passif:{id:'resilience', desc:'Boss échoué = -150 PD au lieu de -300 PD.'}},
-  {n:'B — Guerrier',  e:'🏹', min:14000,  max:28000,   c:'#f59e0b', d:'Tu depasses la moyenne.',          passif:{id:'momentum',   desc:'Semaine 7/7 ≥ 7/10 → +200 PD automatiques.'}},
-  {n:'A — Elite',     e:'🔥', min:28000,  max:50000,   c:'#22c55e', d:'Peu arrivent ici.',                passif:{id:'mastery',    desc:'Chaque habitude vaut +2 PA supplémentaires.'}},
-  {n:'S — Maitre',    e:'💎', min:50000,  max:80000,   c:'#60a5fa', d:'Ta discipline est un exemple.',    passif:{id:'ascension',  desc:'Bonus streak doublé à partir de 7 jours.'}},
-  {n:'SS — Legende',  e:'👑', min:80000,  max:120000,  c:'#e879f9', d:'Tu as transforme ta vie.',         passif:null},
-  {n:'SSS — Transcendant', e:'⭐', min:120000, max:Infinity, c:'#fbbf24', d:'365 jours de discipline absolue.', passif:null},
+  {n:'E — Recrue',         e:'🪨', min:0,       max:2000,    c:'#9ca3af', d:'Le debut.',                        passif:null},
+  {n:'D — Apprenti',       e:'🛡️', min:2000,    max:6000,    c:'#cd7f32', d:'La routine s installe.',           passif:{id:'endurance',  desc:'Les jours 9/10 comptent pour le streak.'}},
+  {n:'C — Chasseur',       e:'⚔️', min:6000,    max:14000,   c:'#a0a0a0', d:'Tu es constant.',                  passif:{id:'resilience', desc:'Boss échoué = -150 PD au lieu de -300 PD.'}},
+  {n:'B — Guerrier',       e:'🏹', min:14000,   max:28000,   c:'#f59e0b', d:'Tu depasses la moyenne.',          passif:{id:'momentum',   desc:'Semaine 7/7 ≥ 7/10 → +200 PD automatiques.'}},
+  {n:'A — Elite',          e:'🔥', min:28000,   max:50000,   c:'#22c55e', d:'Peu arrivent ici.',                passif:{id:'mastery',    desc:'Chaque habitude vaut +2 PA supplémentaires.'}},
+  {n:'S — Maitre',         e:'💎', min:50000,   max:80000,   c:'#60a5fa', d:'Ta discipline est un exemple.',    passif:{id:'ascension',  desc:'Bonus streak doublé à partir de 7 jours.'}},
+  {n:'SS — Legende',       e:'👑', min:80000,   max:120000,  c:'#e879f9', d:'Tu as transforme ta vie.',         passif:null},
+  {n:'SSS — Transcendant', e:'⭐', min:120000,  max:Infinity, c:'#fbbf24', d:'365 jours de discipline absolue.', passif:null},
 ];
 
 const RANK_AWAKENING = {
@@ -164,7 +164,7 @@ const ATTRIBUTES = [
    subs:[{id:'exe_finish',name:'Finir',desc:'Aller jusqu au bout'},{id:'exe_prio',name:'Priorisation',desc:'Identifier ce qui compte'},{id:'exe_vitesse',name:'Vitesse',desc:'Agir rapidement'},{id:'exe_constance',name:'Constance',desc:'Maintenir effort'}]},
 ];
 
-const BOSS_PA_BY_DIFF   = { 'Normale':60, 'Difficile':120, 'Extreme':200, 'Legendaire':300 };
+const BOSS_PA_BY_DIFF   = { 'Normale':60, 'Difficile':130, 'Extreme':220, 'Legendaire':350, 'Mythique':500 };
 const QUEST_PA_BY_DIFF  = { 'easy':30, 'medium':60, 'hard':100 };
 const SKILL_PA_MAP = {
   'Calisthenics':           'physique',
