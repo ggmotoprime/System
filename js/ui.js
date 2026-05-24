@@ -595,9 +595,14 @@ function renderAttr() {
           </div>`;
         }).join('')}
       </div>
-      <div style="background:var(--surface2);border-radius:9px;padding:.52rem .75rem;font-size:.65rem;color:var(--text2);margin-bottom:6px;line-height:1.75;">
-        <strong style="color:var(--text);">Sources PA :</strong><br>
-        Habitudes quotidiennes · Boss vaincus <strong style="color:#a78bfa;">+${paFromBoss} PA</strong> · Quêtes <strong style="color:#fbbf24;">+${paFromQuests} PA</strong> · Skills <strong style="color:#4ade80;">+${paFromSkills} PA</strong>
+      <div style="background:var(--surface2);border-radius:9px;padding:.52rem .75rem;font-size:.65rem;color:var(--text2);margin-bottom:6px;line-height:1.9;">
+        <strong style="color:var(--text);">Sources PA — ${a.name} :</strong><br>
+        ${getDetailedPASources(a.id)}
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap;">
+          <span>⚔️ Boss : <strong style="color:#a78bfa;">+${paFromBoss} PA</strong></span>
+          <span>📜 Quêtes : <strong style="color:#fbbf24;">+${paFromQuests} PA</strong></span>
+          <span>🧠 Skills : <strong style="color:#4ade80;">+${paFromSkills} PA</strong></span>
+        </div>
       </div>
       ${nextAction ? `<div class="attr-next-action">→ ${nextAction}</div>` : ''}
       <div class="attr-goal">🎯 <strong>Objectif :</strong> ${a.goal}</div>
