@@ -519,5 +519,5 @@ const SKILLS_DATA_DEFAULT = [
 'Travailler avec 3 médiums différents',
 'Développer son style personnel reconnaissable'
 ]},
-  
+ ]; 
 
