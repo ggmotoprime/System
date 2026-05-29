@@ -568,3 +568,266 @@ function escAttr(str) {
     .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// ══════════════════════════════════════════════
+// MOTEUR DE QUÊTES ADAPTATIVES
+// ══════════════════════════════════════════════
+
+const HABIT_TO_ATTR = {
+  'Sport':      'physique',
+  'Pushup':     'physique',
+  'Nutrition':  'nutrition',
+  'Priere':     'spiritualite',
+  'Coran':      'spiritualite',
+  'Islam':      'spiritualite',
+  'Arabe':      'intelligence',
+  'Skill':      'intelligence',
+  'Chess':      'intelligence',
+  'No Scroll':  'discipline',
+};
+
+function getGenQuestsKey(wn, yr) {
+  return `ht_gen_quests_${wn}_${yr}`;
+}
+
+function getGeneratedQuests(wn, yr) {
+  try {
+    const raw = localStorage.getItem(getGenQuestsKey(wn, yr));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function saveGeneratedQuests(wn, yr, data) {
+  localStorage.setItem(getGenQuestsKey(wn, yr), JSON.stringify(data));
+}
+
+function generateWeeklyQuests(forceRegen = false) {
+  const today = toDay();
+  const wn = getWN(today);
+  const yr = new Date().getFullYear();
+
+  // Si déjà généré cette semaine et pas de force → retourner le cache
+  if (!forceRegen) {
+    const cached = getGeneratedQuests(wn, yr);
+    if (cached && cached.weekNum === wn && cached.year === yr) {
+      return cached.quests;
+    }
+  }
+
+  const allQuests = getQuests();
+  const { attr } = computeAttrPA();
+  const { streak } = computeStreak(today);
+  const dates = Object.keys(allData).sort();
+
+  // ── Données contextuelles ──
+
+  // Score des 7 derniers jours
+  const last7 = [];
+  for (let i = 1; i <= 7; i++) {
+    const d = addDays(today, -i);
+    last7.push({ date: d, score: allData[d] ? scoreDay(d) : null });
+  }
+
+  // Score moyen des 7 derniers jours (jours trackés uniquement)
+  const trackedLast7 = last7.filter(x => x.score !== null);
+  const avgScore7 = trackedLast7.length
+    ? trackedLast7.reduce((a, x) => a + x.score, 0) / trackedLast7.length
+    : 0;
+
+  // Derniers 3 jours — détecter absence
+  const last3 = last7.slice(0, 3);
+  const absenceLast3 = last3.every(x => x.score === null || x.score === 0);
+
+  // PA par attribut des 7 derniers jours (progression récente)
+  const recentPA = {};
+  ATTRIBUTES.forEach(a => recentPA[a.id] = 0);
+  last7.forEach(({ date }) => {
+    if (!allData[date]) return;
+    const day = allData[date];
+    if (day['Sport'])      { recentPA['physique']      += 3; }
+    if (day['Pushup'])     { recentPA['physique']      += 2; }
+    if (day['Nutrition'])  { recentPA['nutrition']     += 3; }
+    if (day['Priere'])     { recentPA['spiritualite']  += 3; }
+    if (day['Coran'])      { recentPA['spiritualite']  += 3; }
+    if (day['Islam'])      { recentPA['spiritualite']  += 2; }
+    if (day['Arabe'])      { recentPA['intelligence']  += 3; }
+    if (day['Skill'])      { recentPA['intelligence']  += 2; }
+    if (day['Chess'])      { recentPA['intelligence']  += 3; }
+    if (day['No Scroll'])  { recentPA['discipline']    += 2; }
+  });
+
+  // Boss actif cette semaine
+  const currentBoss = getBossByWeek(wn);
+  const bossAttr = currentBoss ? currentBoss.a : null;
+
+  // HP du boss
+  let bossHpPct = 100;
+  let bossStepsTotal = 0;
+  let bossStepsDone = 0;
+  if (currentBoss) {
+    const bossKey = `w${wn}_${yr}`;
+    const bossData = S.boss()[bossKey];
+    bossStepsTotal = (currentBoss.s || []).length;
+    bossStepsDone = bossData ? (bossData.checks || []).length : 0;
+    bossHpPct = bossStepsTotal > 0
+      ? Math.max(0, 100 - Math.round(bossStepsDone / bossStepsTotal * 100))
+      : 100;
+  }
+
+  // Deadline boss (dimanche de la semaine)
+  const weekStart = getWS(today, 0);
+  const weekEnd = addDays(weekStart, 6);
+  const daysUntilEnd = Math.max(0, daysBetween(today, weekEnd));
+
+  // Attribut max et min (pour déséquilibre global)
+  const attrIds = ATTRIBUTES.map(a => a.id);
+  const attrValues = attrIds.map(id => ({ id, val: attr[id] || 0 }));
+  const attrMax = attrValues.reduce((a, b) => b.val > a.val ? b : a);
+  const attrMin = attrValues.reduce((a, b) => b.val < a.val ? b : a);
+
+  // ── Application des règles dans l'ordre ──
+
+  const selectedQuests = [];   // quêtes finales
+  const usedAttrs = new Set(); // attributs déjà couverts
+  const rulesApplied = [];
+
+  // Helper : piocher une quête dans un attribut donné
+  function pickQuest(attrId, preferDiff, exclude = []) {
+    if (usedAttrs.has(attrId)) return null;
+    if (bossAttr && attrId === bossAttr) return null; // règle anti-doublon boss
+    const pool = allQuests.filter(q =>
+      q.a === attrId &&
+      !exclude.includes(q.n) &&
+      !selectedQuests.find(s => s.n === q.n)
+    );
+    if (!pool.length) return null;
+    // Priorité à la difficulté demandée, sinon la plus proche
+    const byDiff = pool.filter(q => q.diff === preferDiff);
+    return byDiff.length ? byDiff[Math.floor(Math.random() * byDiff.length)]
+                         : pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function addQuest(quest, rule, multiplier = 1.0) {
+    if (!quest) return false;
+    if (selectedQuests.find(q => q.n === quest.n)) return false;
+    if (usedAttrs.has(quest.a)) return false;
+    selectedQuests.push({
+      ...quest,
+      r: Math.round(quest.r * multiplier),
+      generated: true,
+      rule,
+      xp_multiplier: multiplier,
+    });
+    usedAttrs.add(quest.a);
+    rulesApplied.push(rule);
+    return true;
+  }
+
+  // ── Règle 3 : Retour après absence ──
+  if (absenceLast3 && selectedQuests.length < 5) {
+    // Quête facile sur l'attribut avec le moins de PA récents
+    const weakest = attrValues
+      .filter(a => a.id !== bossAttr && !usedAttrs.has(a.id))
+      .sort((a, b) => recentPA[a.id] - recentPA[b.id])[0];
+    if (weakest) {
+      const q = pickQuest(weakest.id, 'easy');
+      addQuest(q, 'comeback', 1.5);
+    }
+  }
+
+  // ── Règle 4 : Streak long ──
+  if (streak >= 14 && avgScore7 >= 8.5 && selectedQuests.length < 5) {
+    const candidates = attrIds.filter(id => id !== bossAttr && !usedAttrs.has(id));
+    // Choisit l'attribut avec le plus de PA récents (momentum)
+    const strongest = candidates
+      .map(id => ({ id, val: recentPA[id] }))
+      .sort((a, b) => b.val - a.val)[0];
+    if (strongest) {
+      const q = pickQuest(strongest.id, 'hard');
+      addQuest(q, 'streak_challenge', 1.5);
+    }
+  }
+
+  // ── Règle 5 : Boss en danger ──
+  if (currentBoss && bossHpPct > 70 && daysUntilEnd <= 4 && selectedQuests.length < 5) {
+    // Boss peu avancé + deadline proche → quête sur l'attribut adjacent au boss
+    // On choisit un attribut lié mais différent du boss pour ne pas dupliquer
+    const bossRelated = {
+      'physique':      'execution',
+      'discipline':    'mental',
+      'mental':        'discipline',
+      'spiritualite':  'intelligence',
+      'intelligence':  'execution',
+      'nutrition':     'physique',
+      'social':        'execution',
+      'execution':     'discipline',
+    };
+    const targetAttr = bossRelated[bossAttr] || 'execution';
+    if (!usedAttrs.has(targetAttr)) {
+      const q = pickQuest(targetAttr, 'medium');
+      addQuest(q, 'boss_danger');
+    }
+  }
+
+  // ── Règle 6 : Déséquilibre global ──
+  if (attrMax.val > 0 && attrMin.val * 2 < attrMax.val && selectedQuests.length < 5) {
+    if (attrMin.id !== bossAttr && !usedAttrs.has(attrMin.id)) {
+      const q = pickQuest(attrMin.id, 'medium');
+      addQuest(q, 'global_imbalance');
+    }
+  }
+
+  // ── Règle 2 : Rééquilibrage (attribut sans progression 7j) ──
+  if (selectedQuests.length < 5) {
+    const stagnant = attrIds
+      .filter(id => id !== bossAttr && !usedAttrs.has(id) && recentPA[id] === 0)
+      .sort((a, b) => (attr[a] || 0) - (attr[b] || 0)); // priorité au plus faible total
+
+    for (const attrId of stagnant) {
+      if (selectedQuests.length >= 5) break;
+      const q = pickQuest(attrId, 'medium');
+      addQuest(q, 'rebalance');
+    }
+  }
+
+  // ── Remplissage : compléter jusqu'à 5 quêtes ──
+  if (selectedQuests.length < 5) {
+    // Priorité aux attributs avec le moins de PA total, hors boss
+    const remaining = attrIds
+      .filter(id => id !== bossAttr && !usedAttrs.has(id))
+      .sort((a, b) => (attr[a] || 0) - (attr[b] || 0));
+
+    for (const attrId of remaining) {
+      if (selectedQuests.length >= 5) break;
+      const q = pickQuest(attrId, 'medium');
+      if (addQuest(q, 'fill')) continue;
+      // Si medium indisponible, essayer easy puis hard
+      const q2 = pickQuest(attrId, 'easy');
+      if (addQuest(q2, 'fill')) continue;
+      const q3 = pickQuest(attrId, 'hard');
+      addQuest(q3, 'fill');
+    }
+  }
+
+  // ── Sauvegarder ──
+  const result = {
+    weekNum: wn,
+    year: yr,
+    generatedAt: today,
+    rules_applied: rulesApplied,
+    quests: selectedQuests,
+  };
+  saveGeneratedQuests(wn, yr, result);
+  return selectedQuests;
+}
+
+// Labels lisibles pour les règles
+const RULE_LABELS = {
+  comeback:         '🔄 Retour',
+  streak_challenge: '🔥 Défi Streak',
+  boss_danger:      '⚠️ Sprint Boss',
+  global_imbalance: '⚖️ Rééquilibrage',
+  rebalance:        '📈 Progression',
+  fill:             '⚡ Auto',
+};
