@@ -165,6 +165,55 @@ function renderToday() {
   renderXP();
   renderProphecy(t);
   renderEquippedTitle();
+  // Bouton régénérer visible uniquement en mode édition
+  renderRegenBtn(t);
+}
+
+function renderRegenBtn(today) {
+  const existing = document.getElementById('regen-quest-btn');
+  if (existing) existing.remove();
+  if (!editMode) return;
+
+  const wn = getWN(today);
+  const yr = new Date().getFullYear();
+  const cached = getGeneratedQuests(wn, yr);
+
+  const btn = document.createElement('button');
+  btn.id = 'regen-quest-btn';
+  btn.style.cssText = `
+    display:flex;align-items:center;gap:6px;
+    background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);
+    color:#60a5fa;border-radius:9px;font-size:.72rem;font-weight:600;
+    padding:.38rem .8rem;cursor:pointer;font-family:'DM Sans',sans-serif;
+    margin-bottom:8px;width:100%;justify-content:center;
+    transition:all .18s;
+  `;
+
+  // Affiche les règles appliquées si déjà généré
+  const rulesInfo = cached && cached.rules_applied && cached.rules_applied.length
+    ? cached.rules_applied.map(r => RULE_LABELS[r] || r).join(' · ')
+    : 'Non généré';
+
+  btn.innerHTML = `
+    <span>↻ Régénérer les quêtes</span>
+    <span style="font-size:.6rem;color:var(--muted);font-weight:400;">${rulesInfo}</span>
+  `;
+
+  btn.addEventListener('click', () => {
+    // Efface le cache pour forcer la régénération
+    const key = getGenQuestsKey(wn, yr);
+    localStorage.removeItem(key);
+    generateWeeklyQuests(true);
+    renderQuests(today);
+    renderRegenBtn(today);
+    showToast('⚡ Quêtes régénérées');
+  });
+
+  // Insère avant la liste de quêtes
+  const questCard = document.getElementById('quest-list');
+  if (questCard && questCard.parentNode) {
+    questCard.parentNode.insertBefore(btn, questCard);
+  }
 }
 
 function renderEquippedTitle() {
@@ -519,40 +568,96 @@ function computeQIndices(weekNum) {
 function renderQuests(today) {
   const el = document.getElementById('quest-list');
   if (!el) return;
-  const wn=getWN(today), weekKey=getQKey(today), questList=getQuests(), indices=computeQIndices(wn);
-  if (!indices.length) { el.innerHTML=`<div style="font-size:.78rem;color:var(--muted);text-align:center;padding:1.5rem;">Aucune quête disponible</div>`; return; }
+
+  const wn = getWN(today);
+  const yr = new Date().getFullYear();
+  const weekKey = getQKey(today);
+
+  // Utilise les quêtes générées si disponibles, sinon génère
+  let quests = generateWeeklyQuests(false);
+
+  // Fallback : si la génération échoue, utiliser l'ancienne méthode
+  if (!quests || !quests.length) {
+    const questList = getQuests();
+    const indices = computeQIndices(wn);
+    quests = indices.map(i => questList[i]).filter(Boolean);
+  }
+
+  if (!quests.length) {
+    el.innerHTML = `<div style="font-size:.78rem;color:var(--muted);text-align:center;padding:1.5rem;">Aucune quête disponible</div>`;
+    return;
+  }
+
   el.innerHTML = '';
-  indices.forEach(qIdx => {
-    const q = questList[qIdx]; if (!q) return;
+
+  quests.forEach(q => {
+    if (!q) return;
     const qState = S.getQState(weekKey, q.n);
-    const isDone = qState.state==='done', isFail=qState.state==='failed';
-    const attr = ATTRIBUTES.find(a=>a.id===q.a);
-    const diffLabel = q.diff==='easy'?'Facile':q.diff==='medium'?'Moyen':'Difficile';
-    const paBadge = QUEST_PA_BY_DIFF[q.diff]||30;
+    const isDone = qState.state === 'done';
+    const isFail = qState.state === 'failed';
+    const attr = ATTRIBUTES.find(a => a.id === q.a);
+    const diffLabel = q.diff === 'easy' ? 'Facile' : q.diff === 'medium' ? 'Moyen' : 'Difficile';
+    const paBadge = QUEST_PA_BY_DIFF[q.diff] || 30;
+
+    // Badge de règle si quête générée
+    const ruleLabel = q.generated && q.rule ? (RULE_LABELS[q.rule] || '⚡ Auto') : null;
+    const multiplierBadge = q.xp_multiplier && q.xp_multiplier > 1
+      ? `<span style="font-size:.58rem;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:1px 6px;font-weight:700;">×${q.xp_multiplier} XP</span>`
+      : '';
+
     const item = document.createElement('div');
-    item.className = 'quest-item'+(isDone?' q-done':isFail?' q-fail':'');
-    const actsBtns = document.createElement('div'); actsBtns.className='quest-acts';
+    item.className = 'quest-item' + (isDone ? ' q-done' : isFail ? ' q-fail' : '');
+
+    const actsBtns = document.createElement('div');
+    actsBtns.className = 'quest-acts';
+
     if (!isDone && !isFail) {
-      const okBtn=document.createElement('button'); okBtn.className='qb ok'; okBtn.textContent='✅';
-      okBtn.addEventListener('click',()=>{ S.saveQState(weekKey,q.n,{state:'done',reward:parseInt(q.r)||0}); renderQuests(today); renderXP(); updateChronicles(toDay()); });
-      const koBtn=document.createElement('button'); koBtn.className='qb ko'; koBtn.textContent='❌';
-      koBtn.addEventListener('click',()=>{ S.saveQState(weekKey,q.n,{state:'failed'}); renderQuests(today); });
-      actsBtns.appendChild(okBtn); actsBtns.appendChild(koBtn);
+      const okBtn = document.createElement('button');
+      okBtn.className = 'qb ok';
+      okBtn.textContent = '✅';
+      okBtn.addEventListener('click', () => {
+        const reward = Math.round((q.r || 0) * (q.xp_multiplier || 1));
+        S.saveQState(weekKey, q.n, { state: 'done', reward });
+        renderQuests(today);
+        renderXP();
+        updateChronicles(toDay());
+      });
+      const koBtn = document.createElement('button');
+      koBtn.className = 'qb ko';
+      koBtn.textContent = '❌';
+      koBtn.addEventListener('click', () => {
+        S.saveQState(weekKey, q.n, { state: 'failed' });
+        renderQuests(today);
+      });
+      actsBtns.appendChild(okBtn);
+      actsBtns.appendChild(koBtn);
     }
-    const rstBtn=document.createElement('button'); rstBtn.className='qb rst'; rstBtn.textContent='↺';
-    rstBtn.addEventListener('click',()=>{ localStorage.removeItem(`${weekKey}__${q.n}`); renderQuests(today); renderXP(); });
+
+    const rstBtn = document.createElement('button');
+    rstBtn.className = 'qb rst';
+    rstBtn.textContent = '↺';
+    rstBtn.addEventListener('click', () => {
+      localStorage.removeItem(`${weekKey}__${q.n}`);
+      renderQuests(today);
+      renderXP();
+    });
     actsBtns.appendChild(rstBtn);
+
     item.innerHTML = `
       <div class="quest-hdr">
         <div class="quest-ico">${q.i}</div>
         <div class="quest-nm">${q.n}</div>
-        <div class="quest-badge ${q.diff}">${diffLabel}</div>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+          ${ruleLabel ? `<span style="font-size:.56rem;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.25);border-radius:6px;padding:1px 6px;font-weight:600;">${ruleLabel}</span>` : ''}
+          <div class="quest-badge ${q.diff}">${diffLabel}</div>
+        </div>
       </div>
       <div class="quest-desc">${q.d}</div>
-      ${attr?`<div style="font-size:.6rem;color:var(--muted);margin-bottom:5px;">${attr.emoji} +${paBadge} PA ${attr.name}</div>`:''}
+      ${attr ? `<div style="font-size:.6rem;color:var(--muted);margin-bottom:5px;">${attr.emoji} +${paBadge} PA ${attr.name}</div>` : ''}
       <div class="quest-ftr">
-        <div class="quest-rew">🏆 +${q.r} PD${isDone?' ✅':isFail?' ❌':''}</div>
+        <div class="quest-rew">🏆 +${q.r} PD ${multiplierBadge}${isDone ? ' ✅' : isFail ? ' ❌' : ''}</div>
       </div>`;
+
     item.querySelector('.quest-ftr').appendChild(actsBtns);
     el.appendChild(item);
   });
@@ -1183,6 +1288,10 @@ function toggleEditMode() {
   document.getElementById('edit-mode-label').style.color=editMode?'#f97316':'var(--muted)';
   const activeTab=document.querySelector('.tab-btn.active');
   if(activeTab) switchTab(activeTab.dataset.tab);
+  // Rafraîchit le bouton régénérer selon le mode
+  if (document.getElementById('tab-today').classList.contains('active')) {
+    renderRegenBtn(toDay());
+  }
 }
 
 // ── MODAL ──
