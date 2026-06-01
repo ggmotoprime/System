@@ -1128,6 +1128,9 @@ function generateWeeklyReport(today) {
     directive,
   };
 
+  // Bilan du contrat en même temps que le rapport
+  buildContractBilan(today);
+
   localStorage.setItem(getReportKey(today), JSON.stringify(report));
   return report;
 }
