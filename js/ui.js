@@ -96,12 +96,33 @@ function showDash() {
   // Vérifier si un rapport doit être généré
   const newReport = checkAndGenerateReport();
   if (newReport) {
-    // Notification sur l'onglet Registre
-    const reportTab = document.querySelector('[data-tab="report"]');
-    if (reportTab) {
-      reportTab.innerHTML = '📋 Registre <span style="display:inline-block;width:7px;height:7px;background:#4ade80;border-radius:50%;vertical-align:middle;margin-left:3px;box-shadow:0 0 6px #4ade80;"></span>';
-    }
     showToast('📋 Rapport hebdomadaire généré');
+    // Notification sur l'onglet Registre — délai pour s'assurer que le DOM est prêt
+    setTimeout(() => {
+      const reportTab = document.querySelector('[data-tab="report"]');
+      if (reportTab) {
+        reportTab.innerHTML = '📋 Registre <span style="display:inline-block;width:7px;height:7px;background:#4ade80;border-radius:50%;vertical-align:middle;margin-left:3px;box-shadow:0 0 6px #4ade80;animation:pulse-dot 1.5s infinite;"></span>';
+      }
+    }, 500);
+  }
+  // Notification persistante si rapport existe pour cette semaine mais pas encore vu
+  else {
+    setTimeout(() => {
+      const today2 = toDay();
+      const existingReport = getStoredReport(today2);
+      if (existingReport) {
+        const reportTab = document.querySelector('[data-tab="report"]');
+        if (reportTab && !reportTab.innerHTML.includes('pulse-dot')) {
+          const reportDate = new Date(existingReport.generatedAt);
+          const now2 = new Date();
+          // Notification si rapport généré dans les dernières 24h
+          const hoursDiff = (now2 - reportDate) / 3600000;
+          if (hoursDiff < 24) {
+            reportTab.innerHTML = '📋 Registre <span style="display:inline-block;width:7px;height:7px;background:#4ade80;border-radius:50%;vertical-align:middle;margin-left:3px;box-shadow:0 0 6px #4ade80;animation:pulse-dot 1.5s infinite;"></span>';
+          }
+        }
+      }
+    }, 500);
   }
 
   const awakening = checkAwakening();
@@ -130,7 +151,12 @@ function switchTab(name) {
   if (name === 'badges')    renderBadgesPage();
   if (name === 'titles')    renderTitlesPage();
   if (name === 'chronicles') renderChronicles();
-  if (name === 'report') renderReportPage();
+  if (name === 'report') {
+    renderReportPage();
+    // Effacer la notification
+    const reportTab = document.querySelector('[data-tab="report"]');
+    if (reportTab) reportTab.textContent = '📋 Registre';
+  }
   if (name === 'contract') renderContractPage();
   if (name === 'shop')      renderShop();
   if (name === 'stats') {
@@ -1646,17 +1672,19 @@ function showContractPopup() {
       position:fixed;inset:0;
       background:rgba(0,0,0,.92);
       z-index:950;
-      display:flex;align-items:center;justify-content:center;
+      display:flex;align-items:flex-start;justify-content:center;
       padding:1rem;
       overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
     " id="contract-inner">
       <div style="
         max-width:440px;width:100%;
         background:var(--surface);
         border:1px solid rgba(251,191,36,.25);
         border-radius:20px;
-        padding:1.6rem;
+        padding:1.4rem;
         position:relative;
+        margin:auto;
       ">
         <!-- Header -->
         <div style="text-align:center;margin-bottom:1.4rem;">
