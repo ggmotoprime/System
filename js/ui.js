@@ -1400,3 +1400,185 @@ function doReset(type) {
   if(type==='all'){['ht_boss','ht_q4','ht_m4','ht_tx','ht_seq'].forEach(k=>localStorage.removeItem(k));const toRemove=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.match(/^qw\d+_\d+__/))toRemove.push(k);}toRemove.forEach(k=>localStorage.removeItem(k));}
   renderXP(); renderToday();
 }
+
+// ══════════════════════════════════════════════
+// REGISTRE DU CHASSEUR — Rapports hebdomadaires
+// ══════════════════════════════════════════════
+
+function renderReportPage() {
+  const el = document.getElementById('report-page');
+  if (!el) return;
+
+  const reports = getAllReports();
+  const today = toDay();
+
+  if (!reports.length) {
+    el.innerHTML = `
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:2rem;margin-bottom:1rem;">📋</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7;">
+          Le premier rapport sera généré automatiquement<br>
+          le <strong style="color:var(--text);">prochain dimanche après 18h</strong><br>
+          à l'ouverture du site.
+        </div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = '';
+
+  reports.forEach((report, idx) => {
+    const isLatest = idx === 0;
+    const date = new Date(report.generatedAt);
+    const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const pct = Math.round((report.completionRate || 0) * 100);
+    const pctColor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#eab308' : '#ef4444';
+
+    const bossChip = report.boss
+      ? report.boss.declared === 'won'
+        ? `<span style="font-size:.6rem;background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25);border-radius:6px;padding:1px 7px;font-weight:700;">⚔️ Boss vaincu</span>`
+        : report.boss.declared === 'failed'
+        ? `<span style="font-size:.6rem;background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.25);border-radius:6px;padding:1px 7px;font-weight:700;">💀 Boss échoué</span>`
+        : `<span style="font-size:.6rem;background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25);border-radius:6px;padding:1px 7px;font-weight:700;">${report.boss.icon} ${report.boss.hpPct}% HP</span>`
+      : '';
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background:var(--surface);
+      border:1px solid ${isLatest ? 'rgba(74,222,128,.25)' : 'var(--border)'};
+      border-radius:16px;
+      margin-bottom:10px;
+      overflow:hidden;
+      ${isLatest ? 'box-shadow:0 0 20px rgba(74,222,128,.06);' : ''}
+    `;
+
+    // Header cliquable pour les anciens rapports
+    const header = document.createElement('div');
+    header.style.cssText = `
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.85rem 1rem;cursor:${isLatest ? 'default' : 'pointer'};
+      gap:8px;flex-wrap:wrap;
+    `;
+    header.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">
+          ${report.weekKey}
+        </div>
+        <div style="font-size:.72rem;color:var(--text2);">${dateStr}</div>
+        ${isLatest ? `<span style="font-size:.6rem;background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25);border-radius:6px;padding:1px 7px;font-weight:700;">Dernière semaine</span>` : ''}
+        ${bossChip}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <div style="font-size:1rem;font-weight:700;font-family:'DM Mono',monospace;color:${pctColor};">${pct}%</div>
+        ${!isLatest ? `<div style="font-size:.7rem;color:var(--muted);" class="report-chevron">▾</div>` : ''}
+      </div>`;
+
+    // Contenu du rapport
+    const body = document.createElement('div');
+    body.style.cssText = `
+      padding:0 1rem 1rem;
+      display:${isLatest ? 'block' : 'none'};
+    `;
+
+    body.innerHTML = `
+      <!-- Stats rapides -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
+        <div style="background:var(--surface2);border-radius:10px;padding:.6rem;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;font-family:'DM Mono',monospace;color:${pctColor};">${pct}%</div>
+          <div style="font-size:.58rem;color:var(--muted);margin-top:1px;text-transform:uppercase;letter-spacing:.06em;">Complétion</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:.6rem;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;font-family:'DM Mono',monospace;color:#f97316;">${report.streak || 0}j</div>
+          <div style="font-size:.58rem;color:var(--muted);margin-top:1px;text-transform:uppercase;letter-spacing:.06em;">Streak</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:.6rem;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;font-family:'DM Mono',monospace;color:#4ade80;">${report.questsDone || 0}</div>
+          <div style="font-size:.58rem;color:var(--muted);margin-top:1px;text-transform:uppercase;letter-spacing:.06em;">Quêtes ✅</div>
+        </div>
+      </div>
+
+      <!-- Bloc 1 -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:#4ade80;font-weight:700;margin-bottom:5px;">
+          ▸ Ce que tu as construit
+        </div>
+        <div style="font-size:.78rem;color:var(--text);line-height:1.7;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.1);border-left:2px solid #4ade80;border-radius:0 8px 8px 0;padding:.65rem .85rem;">
+          ${report.built || '—'}
+        </div>
+      </div>
+
+      <!-- Bloc 2 -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:#f87171;font-weight:700;margin-bottom:5px;">
+          ▸ Ce qui a résisté
+        </div>
+        <div style="font-size:.78rem;color:var(--text);line-height:1.7;background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.1);border-left:2px solid #f87171;border-radius:0 8px 8px 0;padding:.65rem .85rem;">
+          ${report.resisted || '—'}
+        </div>
+      </div>
+
+      <!-- Bloc 3 -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:#60a5fa;font-weight:700;margin-bottom:5px;">
+          ▸ Ce que les données disent de toi
+        </div>
+        <div style="font-size:.78rem;color:var(--text);line-height:1.7;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.1);border-left:2px solid #60a5fa;border-radius:0 8px 8px 0;padding:.65rem .85rem;">
+          ${report.pattern || '—'}
+        </div>
+      </div>
+
+      <!-- Bloc 4 -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:#a78bfa;font-weight:700;margin-bottom:5px;">
+          ▸ État du combat
+        </div>
+        <div style="font-size:.78rem;color:var(--text);line-height:1.7;background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.1);border-left:2px solid #a78bfa;border-radius:0 8px 8px 0;padding:.65rem .85rem;">
+          ${report.bossStatus || '—'}
+        </div>
+      </div>
+
+      <!-- Bloc 5 — Directive -->
+      <div style="background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(245,158,11,.04));border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:.85rem 1rem;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:#fbbf24;font-weight:700;margin-bottom:6px;">
+          ⚡ Directive
+        </div>
+        <div style="font-size:.82rem;color:#fef3c7;line-height:1.7;font-weight:500;">
+          ${report.directive || '—'}
+        </div>
+      </div>
+    `;
+
+    card.appendChild(header);
+    card.appendChild(body);
+    el.appendChild(card);
+
+    // Toggle pour les anciens rapports
+    if (!isLatest) {
+      header.addEventListener('click', () => {
+        const isOpen = body.style.display === 'block';
+        body.style.display = isOpen ? 'none' : 'block';
+        const chevron = header.querySelector('.report-chevron');
+        if (chevron) chevron.textContent = isOpen ? '▾' : '▴';
+      });
+    }
+  });
+
+  // Bouton forcer génération en mode édition
+  if (editMode) {
+    const forceBtn = document.createElement('button');
+    forceBtn.style.cssText = `
+      width:100%;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);
+      color:#60a5fa;border-radius:10px;padding:.6rem;cursor:pointer;
+      font-family:'DM Sans',sans-serif;font-weight:600;font-size:.75rem;margin-top:4px;
+    `;
+    forceBtn.textContent = '↻ Forcer la génération du rapport (mode édition)';
+    forceBtn.addEventListener('click', () => {
+      const today = toDay();
+      localStorage.removeItem(getReportKey(today));
+      generateWeeklyReport(today);
+      renderReportPage();
+      showToast('📋 Rapport généré');
+    });
+    el.appendChild(forceBtn);
+  }
+}
