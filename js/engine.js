@@ -1131,3 +1131,110 @@ function generateWeeklyReport(today) {
   localStorage.setItem(getReportKey(today), JSON.stringify(report));
   return report;
 }
+
+// ══════════════════════════════════════════════
+// CONTRAT DU CHASSEUR
+// ══════════════════════════════════════════════
+
+function getContractKey(date) {
+  return `contract_${getWeekKey(date)}`;
+}
+
+function getStoredContract(date) {
+  try {
+    const raw = localStorage.getItem(getContractKey(date));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveContract(date, data) {
+  const key = getContractKey(date);
+  // Ne jamais écraser un contrat existant
+  if (localStorage.getItem(key)) return false;
+  localStorage.setItem(key, JSON.stringify(data));
+  return true;
+}
+
+function getAllContracts() {
+  const contracts = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('contract_')) {
+      try {
+        const c = JSON.parse(localStorage.getItem(k));
+        if (c) contracts.push(c);
+      } catch {}
+    }
+  }
+  return contracts.sort((a, b) => b.weekKey.localeCompare(a.weekKey));
+}
+
+function checkAndShowContract() {
+  const now = new Date();
+  const today = toDay();
+  const isLundi = now.getDay() === 1;
+  if (!isLundi) return false;
+  const existing = getStoredContract(today);
+  if (existing) return false;
+  return true; // doit afficher le pop-up
+}
+
+function buildContractBilan(date) {
+  // Appelée quand le rapport hebdomadaire est généré
+  const contract = getStoredContract(date);
+  if (!contract) return null;
+
+  const wn = getWN(date);
+  const yr = new Date().getFullYear();
+
+  // Taux de complétion de la semaine
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(date, -i);
+    days.push({ date: d, data: allData[d] || null });
+  }
+  const totalDone = days.reduce((acc, d) => {
+    if (!d.data) return acc;
+    return acc + HABITS.filter(h => d.data[h]).length;
+  }, 0);
+  const totalPossible = days.length * HABITS.length;
+  const pct = totalPossible > 0 ? Math.round(totalDone / totalPossible * 100) : 0;
+
+  // Jour le plus difficile
+  const dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const missedByDay = days.map(d => ({
+    dayName: dayNames[new Date(d.date + 'T12:00:00').getDay()],
+    missed: d.data ? HABITS.filter(h => !d.data[h]).length : HABITS.length,
+  }));
+  const hardestDay = missedByDay.reduce((a, b) => b.missed > a.missed ? b : a);
+
+  // Performance réelle vs énergie déclarée
+  const energyLabels = { 1:'Épuisé', 2:'Fatigué', 3:'Correct', 4:'Solide', 5:'Au maximum' };
+  const perfLabel = pct >= 85 ? 'excellente' : pct >= 65 ? 'solide' : pct >= 45 ? 'moyenne' : 'difficile';
+
+  // Phrase de synthèse
+  let synthese = '';
+  const engagementShort = contract.engagement_text || contract.engagement_choice;
+  if (pct >= 80) {
+    synthese = `Tu t'étais engagé sur "${engagementShort}". Avec ${pct}% de complétion, tu as tenu ta parole.`;
+  } else if (pct >= 50) {
+    synthese = `Tu t'étais engagé sur "${engagementShort}". ${pct}% de complétion — partiellement tenu.`;
+  } else {
+    synthese = `Tu t'étais engagé sur "${engagementShort}". ${pct}% de complétion. La semaine a résisté.`;
+  }
+
+  const bilan = {
+    pct,
+    hardestDay: hardestDay.dayName,
+    perfLabel,
+    energyDeclared: contract.energy,
+    energyLabel: energyLabels[contract.energy] || '—',
+    synthese,
+  };
+
+  // Mettre à jour le contrat avec le bilan
+  const key = getContractKey(date);
+  const updated = { ...contract, bilan };
+  localStorage.setItem(key, JSON.stringify(updated));
+  return bilan;
+}
