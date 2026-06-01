@@ -131,6 +131,7 @@ function switchTab(name) {
   if (name === 'titles')    renderTitlesPage();
   if (name === 'chronicles') renderChronicles();
   if (name === 'report') renderReportPage();
+  if (name === 'contract') renderContractPage();
   if (name === 'shop')      renderShop();
   if (name === 'stats') {
     renderStats();
