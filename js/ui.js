@@ -87,6 +87,12 @@ function showDash() {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
 
+  // Vérifier si le contrat doit être affiché
+  const needContract = checkAndShowContract();
+  if (needContract) {
+    setTimeout(() => showContractPopup(), 600);
+  }
+
   // Vérifier si un rapport doit être généré
   const newReport = checkAndGenerateReport();
   if (newReport) {
@@ -1594,4 +1600,396 @@ function renderReportPage() {
     });
     el.appendChild(forceBtn);
   }
+}
+// ══════════════════════════════════════════════
+// CONTRAT DU CHASSEUR — UI
+// ══════════════════════════════════════════════
+
+function showContractPopup() {
+  const overlay = document.getElementById('contract-overlay');
+  if (!overlay) return;
+
+  const today = toDay();
+  const wn = getWN(today);
+  const yr = new Date().getFullYear();
+  const boss = getBossByWeek(wn);
+
+  // Options engagement
+  const engagementOptions = [
+    'Maintenir mon streak',
+    boss ? `Vaincre ${boss.i} ${boss.n}` : 'Vaincre le boss actif',
+    'Progresser en Discipline',
+    'Progresser en Physique',
+    'Progresser en Spiritualité',
+    'Progresser en Intelligence',
+    'Progresser en Mental',
+    'Progresser en Nutrition',
+    'Progresser en Social',
+    'Progresser en Exécution',
+    'Compléter ma quête principale',
+    'Reprendre après une période difficile',
+  ];
+
+  const obstacleOptions = [
+    'Manque de temps',
+    'Fatigue',
+    'Manque de motivation',
+    'Environnement peu favorable',
+    'Imprévu probable',
+    'Distraction digitale',
+    'Stress / pression externe',
+  ];
+
+  overlay.innerHTML = `
+    <div style="
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.92);
+      z-index:950;
+      display:flex;align-items:center;justify-content:center;
+      padding:1rem;
+      overflow-y:auto;
+    " id="contract-inner">
+      <div style="
+        max-width:440px;width:100%;
+        background:var(--surface);
+        border:1px solid rgba(251,191,36,.25);
+        border-radius:20px;
+        padding:1.6rem;
+        position:relative;
+      ">
+        <!-- Header -->
+        <div style="text-align:center;margin-bottom:1.4rem;">
+          <div style="font-size:1.6rem;margin-bottom:.5rem;">📜</div>
+          <div style="font-size:.6rem;text-transform:uppercase;letter-spacing:.18em;color:#fbbf24;font-weight:700;margin-bottom:.3rem;">Contrat du Chasseur</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--text);">Semaine ${wn} — ${yr}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem;">
+            ${new Date(today + 'T12:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long' })}
+          </div>
+        </div>
+
+        <!-- Q1 — Engagement -->
+        <div style="margin-bottom:1.2rem;">
+          <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:#fbbf24;font-weight:700;margin-bottom:.6rem;">
+            01 — Quel est ton engagement principal cette semaine ?
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;" id="engagement-options">
+            ${engagementOptions.map((opt, i) => `
+              <label style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:.5rem .75rem;cursor:pointer;font-size:.76rem;color:var(--text2);transition:all .15s;" class="contract-option">
+                <input type="radio" name="engagement" value="${escAttr(opt)}" style="accent-color:#fbbf24;flex-shrink:0;">
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+          <textarea id="engagement-text" placeholder="Précise ou ajoute quelque chose... (optionnel)" style="
+            width:100%;margin-top:8px;background:var(--surface2);border:1px solid var(--border2);
+            border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;
+            font-size:.76rem;padding:.6rem .8rem;outline:none;resize:none;height:56px;
+            transition:border-color .2s;
+          "></textarea>
+        </div>
+
+        <!-- Q2 — Obstacle -->
+        <div style="margin-bottom:1.2rem;">
+          <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:#f97316;font-weight:700;margin-bottom:.6rem;">
+            02 — Quel est ton principal obstacle cette semaine ?
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;" id="obstacle-options">
+            ${obstacleOptions.map(opt => `
+              <label style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:.5rem .75rem;cursor:pointer;font-size:.76rem;color:var(--text2);transition:all .15s;" class="contract-option">
+                <input type="radio" name="obstacle" value="${escAttr(opt)}" style="accent-color:#f97316;flex-shrink:0;">
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+          <textarea id="obstacle-text" placeholder="Précise ou ajoute quelque chose... (optionnel)" style="
+            width:100%;margin-top:8px;background:var(--surface2);border:1px solid var(--border2);
+            border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;
+            font-size:.76rem;padding:.6rem .8rem;outline:none;resize:none;height:56px;
+            transition:border-color .2s;
+          "></textarea>
+        </div>
+
+        <!-- Q3 — Énergie -->
+        <div style="margin-bottom:1.4rem;">
+          <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:#60a5fa;font-weight:700;margin-bottom:.6rem;">
+            03 — Ton niveau d'énergie en ce début de semaine ?
+          </div>
+          <div style="padding:.5rem 0;">
+            <input type="range" id="energy-slider" min="1" max="5" value="3" style="
+              width:100%;accent-color:#60a5fa;cursor:pointer;
+            ">
+            <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--muted);margin-top:4px;">
+              <span>😞 Épuisé</span>
+              <span>😐 Correct</span>
+              <span>⚡ Au maximum</span>
+            </div>
+            <div style="text-align:center;margin-top:8px;" id="energy-display">
+              <span style="font-size:1rem;font-weight:700;font-family:'DM Mono',monospace;color:#60a5fa;">3</span>
+              <span style="font-size:.72rem;color:var(--text2);"> — Correct</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bouton signer -->
+        <button id="contract-sign-btn" style="
+          width:100%;background:linear-gradient(135deg,#d97706,#f59e0b);
+          color:#000;border:none;border-radius:12px;
+          font-family:'DM Sans',sans-serif;font-weight:700;font-size:.9rem;
+          padding:.85rem;cursor:pointer;transition:opacity .2s;
+        ">
+          ✍️ Signer le contrat
+        </button>
+        <div id="contract-error" style="display:none;color:#f87171;font-size:.72rem;text-align:center;margin-top:.5rem;">
+          Sélectionne un engagement et un obstacle avant de signer.
+        </div>
+      </div>
+    </div>`;
+
+  overlay.style.display = 'block';
+
+  // Slider énergie
+  const slider = document.getElementById('energy-slider');
+  const energyLabels = { 1:'😞 Épuisé', 2:'😔 Fatigué', 3:'😐 Correct', 4:'💪 Solide', 5:'⚡ Au maximum' };
+  const energyColors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#22c55e', 5:'#4ade80' };
+
+  slider.addEventListener('input', () => {
+    const val = parseInt(slider.value);
+    const display = document.getElementById('energy-display');
+    display.innerHTML = `
+      <span style="font-size:1rem;font-weight:700;font-family:'DM Mono',monospace;color:${energyColors[val]};">${val}</span>
+      <span style="font-size:.72rem;color:var(--text2);"> — ${energyLabels[val].split(' ').slice(1).join(' ')}</span>`;
+  });
+
+  // Style radio sélectionné
+  overlay.querySelectorAll('.contract-option input[type=radio]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const name = radio.name;
+      overlay.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        const label = r.closest('label');
+        if (label) {
+          label.style.borderColor = r.checked ? (name === 'engagement' ? '#fbbf24' : '#f97316') : 'var(--border)';
+          label.style.background = r.checked ? (name === 'engagement' ? 'rgba(251,191,36,.08)' : 'rgba(249,115,22,.08)') : 'var(--surface2)';
+          label.style.color = r.checked ? 'var(--text)' : 'var(--text2)';
+        }
+      });
+    });
+  });
+
+  // Signer
+  document.getElementById('contract-sign-btn').addEventListener('click', () => {
+    const engagementChoice = overlay.querySelector('input[name="engagement"]:checked');
+    const obstacleChoice   = overlay.querySelector('input[name="obstacle"]:checked');
+    const errEl = document.getElementById('contract-error');
+
+    if (!engagementChoice || !obstacleChoice) {
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    const contract = {
+      weekKey: getWeekKey(today),
+      weekNum: wn,
+      year: yr,
+      date: today,
+      signedAt: new Date().toISOString(),
+      engagement_choice: engagementChoice.value,
+      engagement_text: (document.getElementById('engagement-text').value || '').trim(),
+      obstacle_choice: obstacleChoice.value,
+      obstacle_text: (document.getElementById('obstacle-text').value || '').trim(),
+      energy: parseInt(slider.value),
+      bilan: null,
+    };
+
+    saveContract(today, contract);
+    overlay.style.display = 'none';
+    showToast('✍️ Contrat signé — Bonne semaine.');
+
+    // Notification onglet
+    const contractTab = document.querySelector('[data-tab="contract"]');
+    if (contractTab) contractTab.textContent = '📜 Contrat ✅';
+  });
+}
+
+function renderContractPage() {
+  const el = document.getElementById('contract-page');
+  if (!el) return;
+
+  const contracts = getAllContracts();
+  const today = toDay();
+  const energyLabels = { 1:'😞 Épuisé', 2:'😔 Fatigué', 3:'😐 Correct', 4:'💪 Solide', 5:'⚡ Au maximum' };
+  const energyColors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#22c55e', 5:'#4ade80' };
+
+  if (!contracts.length) {
+    el.innerHTML = `
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:2rem;margin-bottom:1rem;">📜</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7;">
+          Aucun contrat signé pour l'instant.<br>
+          Le pop-up apparaît automatiquement<br>
+          <strong style="color:var(--text);">chaque lundi matin</strong> à l'ouverture du site.
+        </div>
+        ${editMode ? `
+          <button id="force-contract-btn" style="
+            margin-top:1rem;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);
+            color:#fbbf24;border-radius:10px;padding:.55rem 1.2rem;cursor:pointer;
+            font-family:'DM Sans',sans-serif;font-weight:600;font-size:.75rem;
+          ">✍️ Forcer le contrat maintenant</button>
+        ` : ''}
+      </div>`;
+
+    const forceBtn = document.getElementById('force-contract-btn');
+    if (forceBtn) forceBtn.addEventListener('click', showContractPopup);
+    return;
+  }
+
+  el.innerHTML = '';
+
+  // Bouton forcer en mode édition
+  if (editMode) {
+    const forceBtn = document.createElement('button');
+    forceBtn.style.cssText = `
+      width:100%;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);
+      color:#fbbf24;border-radius:10px;padding:.5rem;cursor:pointer;
+      font-family:'DM Sans',sans-serif;font-weight:600;font-size:.73rem;
+      margin-bottom:10px;
+    `;
+    forceBtn.textContent = '✍️ Forcer un nouveau contrat (mode édition)';
+    forceBtn.addEventListener('click', () => {
+      // Supprime le contrat de la semaine courante pour permettre la re-signature
+      const key = getContractKey(today);
+      localStorage.removeItem(key);
+      showContractPopup();
+    });
+    el.appendChild(forceBtn);
+  }
+
+  contracts.forEach((contract, idx) => {
+    const isLatest = idx === 0;
+    const signDate = new Date(contract.signedAt || contract.date + 'T08:00:00');
+    const dateStr = signDate.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+    const energy = contract.energy || 3;
+    const hasBilan = contract.bilan !== null && contract.bilan !== undefined;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background:var(--surface);
+      border:1px solid ${isLatest ? 'rgba(251,191,36,.3)' : 'var(--border)'};
+      border-radius:16px;margin-bottom:10px;overflow:hidden;
+      ${isLatest ? 'box-shadow:0 0 20px rgba(251,191,36,.06);' : ''}
+    `;
+
+    const header = document.createElement('div');
+    header.style.cssText = `
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.85rem 1rem;cursor:${isLatest ? 'default' : 'pointer'};gap:8px;flex-wrap:wrap;
+    `;
+    header.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">
+          ${contract.weekKey}
+        </div>
+        <div style="font-size:.72rem;color:var(--text2);">${dateStr}</div>
+        ${isLatest ? `<span style="font-size:.6rem;background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:6px;padding:1px 7px;font-weight:700;">Semaine courante</span>` : ''}
+        ${hasBilan ? `<span style="font-size:.6rem;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.22);border-radius:6px;padding:1px 7px;font-weight:700;">✅ Bilan disponible</span>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:.72rem;color:${energyColors[energy]};">${energyLabels[energy]}</span>
+        ${!isLatest ? `<div style="font-size:.7rem;color:var(--muted);" class="contract-chevron">▾</div>` : ''}
+      </div>`;
+
+    const body = document.createElement('div');
+    body.style.cssText = `padding:0 1rem 1rem;display:${isLatest ? 'block' : 'none'};`;
+
+    // Engagement
+    const engText = contract.engagement_text
+      ? `${contract.engagement_choice} — ${contract.engagement_text}`
+      : contract.engagement_choice;
+
+    // Obstacle
+    const obsText = contract.obstacle_text
+      ? `${contract.obstacle_choice} — ${contract.obstacle_text}`
+      : contract.obstacle_choice;
+
+    body.innerHTML = `
+      <!-- Engagement -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:#fbbf24;font-weight:700;margin-bottom:4px;">
+          ✍️ Engagement
+        </div>
+        <div style="font-size:.78rem;color:var(--text);background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.12);border-left:2px solid #fbbf24;border-radius:0 8px 8px 0;padding:.6rem .8rem;line-height:1.6;">
+          ${engText}
+        </div>
+      </div>
+
+      <!-- Obstacle -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:#f97316;font-weight:700;margin-bottom:4px;">
+          ⚠️ Obstacle anticipé
+        </div>
+        <div style="font-size:.78rem;color:var(--text);background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.12);border-left:2px solid #f97316;border-radius:0 8px 8px 0;padding:.6rem .8rem;line-height:1.6;">
+          ${obsText}
+        </div>
+      </div>
+
+      <!-- Énergie -->
+      <div style="margin-bottom:${hasBilan ? '12px' : '0'};">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:#60a5fa;font-weight:700;margin-bottom:4px;">
+          ⚡ Énergie déclarée
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.12);border-left:2px solid #60a5fa;border-radius:0 8px 8px 0;padding:.6rem .8rem;">
+          <div style="font-size:1.4rem;font-weight:700;font-family:'DM Mono',monospace;color:${energyColors[energy]};">${energy}/5</div>
+          <div style="font-size:.78rem;color:var(--text);">${energyLabels[energy]}</div>
+          <div style="flex:1;background:var(--surface3);border-radius:3px;height:5px;overflow:hidden;margin-left:4px;">
+            <div style="height:100%;border-radius:3px;background:${energyColors[energy]};width:${energy * 20}%;transition:width .8s;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bilan si disponible -->
+      ${hasBilan ? `
+        <div style="background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);border-radius:12px;padding:.85rem;margin-top:4px;">
+          <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:#4ade80;font-weight:700;margin-bottom:8px;">
+            📊 Bilan de fin de semaine
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px;">
+            <div style="background:var(--surface2);border-radius:8px;padding:.5rem;text-align:center;">
+              <div style="font-size:.95rem;font-weight:700;font-family:'DM Mono',monospace;color:${contract.bilan.pct >= 70 ? '#4ade80' : contract.bilan.pct >= 50 ? '#eab308' : '#f87171'};">
+                ${contract.bilan.pct}%
+              </div>
+              <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:1px;">Complétion</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:.5rem;text-align:center;">
+              <div style="font-size:.72rem;font-weight:700;color:#f87171;">${contract.bilan.hardestDay}</div>
+              <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:1px;">Jour difficile</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:.5rem;text-align:center;">
+              <div style="font-size:.72rem;font-weight:700;color:#60a5fa;">${contract.bilan.perfLabel}</div>
+              <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:1px;">Performance</div>
+            </div>
+          </div>
+          <div style="font-size:.76rem;color:var(--text);line-height:1.65;font-style:italic;border-top:1px solid rgba(74,222,128,.12);padding-top:7px;">
+            "${contract.bilan.synthese}"
+          </div>
+        </div>
+      ` : `
+        <div style="font-size:.66rem;color:var(--muted);text-align:center;padding:.5rem;margin-top:4px;">
+          Le bilan sera ajouté automatiquement dimanche soir.
+        </div>
+      `}
+    `;
+
+    card.appendChild(header);
+    card.appendChild(body);
+    el.appendChild(card);
+
+    if (!isLatest) {
+      header.addEventListener('click', () => {
+        const isOpen = body.style.display === 'block';
+        body.style.display = isOpen ? 'none' : 'block';
+        const chevron = header.querySelector('.contract-chevron');
+        if (chevron) chevron.textContent = isOpen ? '▾' : '▴';
+      });
+    }
+  });
 }
