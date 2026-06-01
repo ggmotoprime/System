@@ -831,3 +831,303 @@ const RULE_LABELS = {
   rebalance:        '📈 Progression',
   fill:             '⚡ Auto',
 };
+
+// ══════════════════════════════════════════════
+// RAPPORT HEBDOMADAIRE
+// ══════════════════════════════════════════════
+
+function getWeekKey(date) {
+  const d = new Date(date + 'T12:00:00');
+  const yr = d.getFullYear();
+  const wn = getWN(date);
+  return `${yr}-W${String(wn).padStart(2,'0')}`;
+}
+
+function getReportKey(date) {
+  return `weeklyReport_${getWeekKey(date)}`;
+}
+
+function getStoredReport(date) {
+  try {
+    const raw = localStorage.getItem(getReportKey(date));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function getAllReports() {
+  const reports = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('weeklyReport_')) {
+      try {
+        const r = JSON.parse(localStorage.getItem(k));
+        if (r) reports.push(r);
+      } catch {}
+    }
+  }
+  return reports.sort((a, b) => b.weekKey.localeCompare(a.weekKey));
+}
+
+function checkAndGenerateReport() {
+  const now = new Date();
+  const today = toDay();
+  const isDimanche = now.getDay() === 0;
+  const isAfter18 = now.getHours() >= 18;
+  if (!isDimanche || !isAfter18) return false;
+  const existing = getStoredReport(today);
+  if (existing) return false;
+  generateWeeklyReport(today);
+  return true; // nouveau rapport généré
+}
+
+function generateWeeklyReport(today) {
+  const wn = getWN(today);
+  const yr = new Date().getFullYear();
+  const weekKey = getWeekKey(today);
+
+  // ── Données des 7 derniers jours ──
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today, -i);
+    days.push({ date: d, data: allData[d] || null });
+  }
+  const trackedDays = days.filter(d => d.data !== null);
+
+  // Taux de complétion global
+  const totalPossible = days.length * HABITS.length;
+  const totalDone = days.reduce((acc, d) => {
+    if (!d.data) return acc;
+    return acc + HABITS.filter(h => d.data[h]).length;
+  }, 0);
+  const completionRate = totalPossible > 0 ? totalDone / totalPossible : 0;
+
+  // Habitudes ratées par nom
+  const missedCounts = {};
+  HABITS.forEach(h => {
+    missedCounts[h] = days.filter(d => d.data && !d.data[h]).length
+                    + days.filter(d => !d.data).length; // jours non trackés comptent comme ratés
+  });
+
+  // Jour avec le plus de ratés
+  const dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const missedByDay = days.map(d => ({
+    date: d.date,
+    dayName: dayNames[new Date(d.date + 'T12:00:00').getDay()],
+    missed: d.data ? HABITS.filter(h => !d.data[h]).length : HABITS.length,
+  }));
+  const worstDay = missedByDay.reduce((a, b) => b.missed > a.missed ? b : a);
+
+  // ── PA début vs fin de semaine ──
+  const weekStart = getWS(today, 0);
+  const weekStartDate = addDays(weekStart, -1); // veille du lundi
+
+  // PA total actuel
+  const { attr: attrNow, sub: subNow } = computeAttrPA();
+
+  // PA de début de semaine — simulé en excluant les données de cette semaine
+  const savedAllData = allData;
+  const preWeekData = {};
+  Object.keys(allData).forEach(d => {
+    if (d < weekStart) preWeekData[d] = allData[d];
+  });
+  // Calcul temporaire sans les données de la semaine
+  const attrStart = {};
+  ATTRIBUTES.forEach(a => attrStart[a.id] = 0);
+
+  // Calcul delta PA par attribut
+  const attrDelta = {};
+  ATTRIBUTES.forEach(a => {
+    const paThisWeek = days.reduce((acc, d) => {
+      if (!d.data) return acc;
+      let pa = 0;
+      if (a.id === 'physique')     { if (d.data['Sport']) pa += 3; if (d.data['Pushup']) pa += 2; if (d.data['Sport'] && d.data['Pushup']) pa += 3; }
+      if (a.id === 'nutrition')    { if (d.data['Nutrition']) pa += 3; }
+      if (a.id === 'spiritualite') { if (d.data['Priere']) pa += 3; if (d.data['Coran']) pa += 3; if (d.data['Islam']) pa += 2; if (d.data['Coran'] && d.data['Priere'] && d.data['Islam']) pa += 13; }
+      if (a.id === 'intelligence') { if (d.data['Arabe']) pa += 3; if (d.data['Skill']) pa += 2; if (d.data['Chess']) pa += 3; if (d.data['Arabe'] && d.data['Chess'] && d.data['Skill']) pa += 10; }
+      if (a.id === 'discipline')   { if (d.data['No Scroll']) pa += 2; if (isPerfect(d.date)) pa += 6; pa += 1; }
+      if (a.id === 'mental')       { if (d.data['No Scroll']) pa += 1; if (isPerfect(d.date)) pa += 3; }
+      if (a.id === 'execution')    { if (scoreDay(d.date) >= DS) pa += 1; if (isPerfect(d.date)) pa += 8; }
+      return acc + pa;
+    }, 0);
+    attrDelta[a.id] = paThisWeek;
+  });
+
+  const bestAttr = ATTRIBUTES.reduce((a, b) => attrDelta[b.id] > attrDelta[a.id] ? b : a);
+  const worstAttrProgression = ATTRIBUTES.reduce((a, b) => attrDelta[b.id] < attrDelta[a.id] ? b : a);
+
+  // ── Boss ──
+  const boss = getBossByWeek(wn);
+  let bossHpPct = 100, bossStepsDone = 0, bossStepsTotal = 0, bossDeclared = null;
+  if (boss) {
+    const bossKey = `w${wn}_${yr}`;
+    const bossData = S.boss()[bossKey];
+    bossStepsTotal = (boss.s || []).length;
+    bossStepsDone = bossData ? (bossData.checks || []).length : 0;
+    bossHpPct = bossStepsTotal > 0
+      ? Math.max(0, 100 - Math.round(bossStepsDone / bossStepsTotal * 100))
+      : 100;
+    bossDeclared = bossData ? bossData.declared : null;
+  }
+
+  // ── Quêtes ──
+  const weekQKey = `qw${wn}_${yr}`;
+  let questsDone = 0, questsFailed = 0, questsPending = 0;
+  const genData = getGeneratedQuests(wn, yr);
+  const weekQuests = genData ? genData.quests : [];
+  weekQuests.forEach(q => {
+    const st = S.getQState(weekQKey, q.n);
+    if (st.state === 'done') questsDone++;
+    else if (st.state === 'failed') questsFailed++;
+    else questsPending++;
+  });
+
+  // ── Streak ──
+  const { streak, best } = computeStreak(today);
+
+  // Rapport semaine précédente
+  const lastWeekDate = addDays(today, -7);
+  const lastReport = getStoredReport(lastWeekDate);
+
+  // ══════════════════════════════════════════
+  // GÉNÉRATION DES BLOCS TEXTE
+  // ══════════════════════════════════════════
+
+  const pct = Math.round(completionRate * 100);
+  const trackedCount = trackedDays.length;
+
+  // ── BLOC 1 — CE QUE TU AS CONSTRUIT ──
+  let built = '';
+  const bestAttrDelta = attrDelta[bestAttr.id];
+  const topHabit = HABITS.reduce((a, b) =>
+    (days.filter(d => d.data && d.data[b]).length > days.filter(d => d.data && d.data[a]).length) ? b : a
+  );
+  const topHabitDays = days.filter(d => d.data && d.data[topHabit]).length;
+
+  if (pct >= 80) {
+    built = `${pct}% de complétion sur ${trackedCount} jours trackés. `
+      + `${bestAttr.emoji} ${bestAttr.name} a le plus progressé cette semaine (+${bestAttrDelta} PA). `
+      + `${topHabit} a tenu ${topHabitDays}/7 jours. `
+      + (streak >= 7 ? `Streak actuel : ${streak} jours. Le Système enregistre la continuité.` : 'Les données confirment une semaine solide.');
+  } else if (pct >= 50) {
+    built = `${pct}% de complétion cette semaine. `
+      + `${bestAttr.emoji} ${bestAttr.name} reste ton attribut le plus actif (+${bestAttrDelta} PA). `
+      + `${topHabit} a été ta base sur ${topHabitDays} jours. `
+      + 'Il y a des jours à récupérer, mais la fondation tient.';
+  } else {
+    built = `${pct}% de complétion. ${trackedCount} jours sur 7 trackés. `
+      + `${bestAttr.emoji} ${bestAttr.name} a progressé malgré tout (+${bestAttrDelta} PA). `
+      + 'La semaine a résisté. Les données ne jugent pas — elles enregistrent.';
+  }
+
+  // ── BLOC 2 — CE QUI A RÉSISTÉ ──
+  const hardestHabits = HABITS
+    .map(h => ({ h, missed: missedCounts[h] }))
+    .filter(x => x.missed >= 3)
+    .sort((a, b) => b.missed - a.missed);
+
+  let resisted = '';
+  if (!hardestHabits.length) {
+    resisted = 'Aucune habitude n\'a résisté 3 fois ou plus. Semaine propre.';
+  } else {
+    const top = hardestHabits[0];
+    resisted = `${top.h} a résisté ${top.missed} fois cette semaine. `;
+    if (hardestHabits.length > 1) {
+      resisted += `${hardestHabits.slice(1,3).map(x => x.h).join(' et ')} ont aussi résisté. `;
+    }
+    resisted += `${worstDay.dayName} semble être ton point faible avec ${worstDay.missed} habitude${worstDay.missed > 1 ? 's' : ''} ratée${worstDay.missed > 1 ? 's' : ''}.`;
+  }
+
+  // ── BLOC 3 — CE QUE LES DONNÉES DISENT DE TOI ──
+  let pattern = '';
+  const fastestAttr = ATTRIBUTES.reduce((a, b) => attrDelta[b.id] > attrDelta[a.id] ? b : a);
+  const slowestAttr = ATTRIBUTES.reduce((a, b) => attrDelta[b.id] < attrDelta[a.id] ? b : a);
+  const stagnantAttrs = ATTRIBUTES.filter(a => attrDelta[a.id] === 0);
+
+  pattern = `${fastestAttr.emoji} ${fastestAttr.name} progresse le plus vite cette semaine. `;
+  if (stagnantAttrs.length) {
+    pattern += `${stagnantAttrs.map(a => a.emoji + ' ' + a.name).join(', ')} n'ont pas bougé. `;
+  }
+  if (lastReport) {
+    const prevRate = Math.round((lastReport.completionRate || 0) * 100);
+    const delta = pct - prevRate;
+    if (delta > 5) pattern += `Progression de +${delta}% par rapport à la semaine dernière (${prevRate}%). `;
+    else if (delta < -5) pattern += `Baisse de ${Math.abs(delta)}% par rapport à la semaine dernière (${prevRate}%). `;
+    else pattern += `Stable par rapport à la semaine dernière (${prevRate}%). `;
+  } else {
+    pattern += 'Premier rapport disponible — pas de comparaison possible.';
+  }
+
+  // ── BLOC 4 — ÉTAT DU COMBAT ──
+  let bossStatus = '';
+  if (!boss) {
+    bossStatus = 'Aucun boss assigné cette semaine.';
+  } else if (bossDeclared === 'won') {
+    bossStatus = `${boss.i} ${boss.n} — VAINCU. +${boss.r} PD encaissés.`;
+  } else if (bossDeclared === 'failed') {
+    bossStatus = `${boss.i} ${boss.n} — ÉCHOUÉ. La séquelle est enregistrée.`;
+  } else {
+    const dmgPerDay = trackedCount > 0 ? bossStepsDone / trackedCount : 0;
+    const remainingSteps = bossStepsTotal - bossStepsDone;
+    const daysToFinish = dmgPerDay > 0 ? Math.ceil(remainingSteps / dmgPerDay) : 99;
+    const weekStart2 = getWS(today, 0);
+    const weekEnd = addDays(weekStart2, 6);
+    const daysLeft = Math.max(0, daysBetween(today, weekEnd));
+
+    bossStatus = `${boss.i} ${boss.n} — ${bossHpPct}% HP restants. `;
+    bossStatus += `${bossStepsDone}/${bossStepsTotal} étapes complétées. `;
+
+    if (daysToFinish <= daysLeft) {
+      bossStatus += `À ce rythme, victoire dans ${daysToFinish} jour${daysToFinish > 1 ? 's' : ''}. Dans les temps.`;
+    } else if (daysLeft === 0) {
+      bossStatus += bossHpPct === 0
+        ? 'Toutes les étapes faites. Déclare la victoire.'
+        : `Deadline atteinte. ${bossHpPct}% HP restants — déclare le résultat.`;
+    } else {
+      bossStatus += `Il faut ${daysToFinish} jours à ce rythme mais il reste ${daysLeft} jour${daysLeft > 1 ? 's' : ''}. En retard.`;
+    }
+  }
+
+  // ── BLOC 5 — DIRECTIVE ──
+  let directive = '';
+  const weekStart3 = getWS(today, 0);
+  const weekEnd3 = addDays(weekStart3, 6);
+  const daysLeft3 = Math.max(0, daysBetween(today, weekEnd3));
+
+  const bossInRetard = boss && !bossDeclared && bossHpPct > 50 && daysLeft3 <= 3;
+  const attrBloque = ATTRIBUTES.find(a => attrDelta[a.id] === 0 && (attrNow[a.id] || 0) < 50);
+  const jourFaible = worstDay.missed >= 5;
+  const enFeu = streak >= 14 && pct >= 85;
+
+  if (bossInRetard) {
+    directive = `Le boss ${boss.n} est à ${bossHpPct}% HP avec ${daysLeft3} jour${daysLeft3 > 1 ? 's' : ''} restant${daysLeft3 > 1 ? 's' : ''}. La prochaine semaine commence par le boss.`;
+  } else if (attrBloque) {
+    directive = `${attrBloque.emoji} ${attrBloque.name} n'a pas bougé cette semaine. La semaine prochaine, une action concrète sur cet attribut avant tout autre.`;
+  } else if (jourFaible) {
+    directive = `${worstDay.dayName} est ton point de rupture. La semaine prochaine, prépare ce jour différemment — anticipe l'obstacle.`;
+  } else if (enFeu) {
+    directive = `${streak} jours de streak. ${pct}% de complétion. La semaine prochaine : un boss ou une quête difficile que tu évites depuis trop longtemps.`;
+  } else {
+    const focusAttr = stagnantAttrs.length ? stagnantAttrs[0] : slowestAttr;
+    directive = `Semaine ordinaire. La prochaine : coche ${focusAttr.emoji} ${focusAttr.name} au moins 5 jours sur 7. Pas de grand objectif — juste ça.`;
+  }
+
+  // ── Sauvegarde ──
+  const report = {
+    weekKey,
+    generatedAt: new Date().toISOString(),
+    completionRate,
+    pct,
+    streak,
+    questsDone,
+    questsFailed,
+    boss: boss ? { name: boss.n, icon: boss.i, hpPct: bossHpPct, declared: bossDeclared } : null,
+    built,
+    resisted,
+    pattern,
+    bossStatus,
+    directive,
+  };
+
+  localStorage.setItem(getReportKey(today), JSON.stringify(report));
+  return report;
+}
