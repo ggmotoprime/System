@@ -86,6 +86,18 @@ function toggleTheme() {
 function showDash() {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
+
+  // Vérifier si un rapport doit être généré
+  const newReport = checkAndGenerateReport();
+  if (newReport) {
+    // Notification sur l'onglet Registre
+    const reportTab = document.querySelector('[data-tab="report"]');
+    if (reportTab) {
+      reportTab.innerHTML = '📋 Registre <span style="display:inline-block;width:7px;height:7px;background:#4ade80;border-radius:50%;vertical-align:middle;margin-left:3px;box-shadow:0 0 6px #4ade80;"></span>';
+    }
+    showToast('📋 Rapport hebdomadaire généré');
+  }
+
   const awakening = checkAwakening();
   if (awakening) {
     triggerAwakening(awakening);
@@ -112,6 +124,7 @@ function switchTab(name) {
   if (name === 'badges')    renderBadgesPage();
   if (name === 'titles')    renderTitlesPage();
   if (name === 'chronicles') renderChronicles();
+  if (name === 'report') renderReportPage();
   if (name === 'shop')      renderShop();
   if (name === 'stats') {
     renderStats();
